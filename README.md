@@ -11,5 +11,5 @@ A simple to use local storage system, which uses json files to store data and pr
 - [X] Select statement
 - [ ] Update statement
 - [ ] Delete statement
-- [ ] Eval Safetey
+- [ ] Eval Safety
 - [ ] Advanced eval:  (, ), xor, not
