@@ -10,6 +10,6 @@ A simple to use local storage system, which uses json files to store data and pr
 - [X] Create statement
 - [X] Select statement
 - [ ] Update statement
-- [ ] Delete statement
+- [X] Delete statement
 - [ ] Eval Safety
 - [ ] Advanced eval:  (, ), xor, not
