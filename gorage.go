@@ -2,14 +2,15 @@ package Gorage
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
 )
 
 type Gorage struct {
-	Path   string
-	Tables []GorageTable
+	AllowDuplicated bool
+	Log             bool
+	Path            string
+	Tables          []GorageTable
 }
 
 func (g *Gorage) FromTable(name string) *GorageTable {
@@ -17,7 +18,6 @@ func (g *Gorage) FromTable(name string) *GorageTable {
 	for i, v := range g.Tables {
 		if v.Name == name {
 			k = i
-			//return &v
 			break
 		}
 	}
@@ -33,16 +33,21 @@ func (g *Gorage) TableExists(name string) bool {
 	return false
 }
 
-func (g *Gorage) AddTable(name string, columns []string) {
+func (g *Gorage) CreateTable(name string) *GorageTable {
 	if g.TableExists(name) {
-		return
+		if g.Log {
+			gprint("CreateTable", "Table already exists")
+		}
+		return nil
 	}
 	t := GorageTable{
 		Name:    name,
-		Columns: columns,
+		Host:    g,
+		Columns: []GorageColumn{},
 		Rows:    [][]interface{}{},
 	}
 	g.Tables = append(g.Tables, t)
+	return &g.Tables[len(g.Tables)-1]
 }
 
 func (g *Gorage) Save() {
@@ -50,7 +55,6 @@ func (g *Gorage) Save() {
 	if err != nil {
 		panic(err.Error())
 	}
-	fmt.Printf("%p\n", g.FromTable("User"))
 	file, _ := json.MarshalIndent(g, "", " ")
 	err = os.WriteFile(g.Path, file, 0644)
 	if err != nil {
@@ -76,7 +80,7 @@ func OpenGorage(path string) *Gorage {
 	return &g
 }
 
-func CreateNewGorage(path string) *Gorage {
+func CreateNewGorage(path string, allowDuplicates, log bool) *Gorage {
 	if !fileExists(path) {
 		f, err := os.Create(path)
 		if err != nil {
@@ -87,10 +91,12 @@ func CreateNewGorage(path string) *Gorage {
 			panic(err.Error())
 		}
 		g := Gorage{
-			Path:   path,
-			Tables: []GorageTable{},
+			Log:             log,
+			AllowDuplicated: allowDuplicates,
+			Path:            path,
+			Tables:          []GorageTable{},
 		}
-		file, _ := json.MarshalIndent(g, "", " ")
+		file, _ := json.MarshalIndent(g, "", "	")
 		err = os.WriteFile(path, file, 0644)
 		if err != nil {
 			panic(err.Error())

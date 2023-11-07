@@ -56,6 +56,8 @@ func eval(f *fragment) *fragment {
 		}
 		return &fragment{value: []byte("f")}
 	}
+	println(string(m.value))
+	println("UNREACHABLE")
 	return nil
 }
 
