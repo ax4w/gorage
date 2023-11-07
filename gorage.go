@@ -70,6 +70,9 @@ func OpenGorage(path string) *Gorage {
 	if err != nil {
 		panic(err.Error())
 	}
+	for i, _ := range g.Tables {
+		g.Tables[i].Host = &g
+	}
 	return &g
 }
 

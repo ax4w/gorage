@@ -32,6 +32,19 @@ func TestInsert(t *testing.T) {
 
 }
 
+func TestDelete(t *testing.T) {
+	g := OpenGorage("./test.json")
+	g.
+		FromTable("User").
+		Where("s:FirstName = 'Lars goofy' & i:Age = '5'").
+		Delete()
+	_ = g.
+		FromTable("User").
+		Where("s:FirstName = 'Lars goofy' & i:Age = '5'").
+		Select([]string{"FirstName", "LastName", "Age"})
+	g.Save()
+}
+
 func TestWhere(t *testing.T) {
 	g := OpenGorage("./test.json")
 	userTable := g.

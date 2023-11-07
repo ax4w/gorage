@@ -9,6 +9,7 @@ type GorageTable struct {
 	Name    string
 	Columns []string
 	Rows    [][]interface{}
+	Host    *Gorage `json:"-"`
 }
 
 //i:name
@@ -17,8 +18,9 @@ type GorageTable struct {
 //s:name = 'Tom' | i:alter = 10
 func (g *GorageTable) Where(f string) *GorageTable {
 	res := &GorageTable{
-		Name:    "",
+		Name:    g.Name,
 		Columns: g.Columns,
+		Host:    g.Host,
 		Rows:    [][]interface{}{},
 	}
 	split := strings.Split(f, " ")
@@ -48,11 +50,48 @@ func (g *GorageTable) Where(f string) *GorageTable {
 	return res
 }
 
+func compareRows(a, b []interface{}) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i, _ := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (g *GorageTable) Delete() {
+	k := -1
+	println(g.Host)
+	for i, v := range g.Host.Tables {
+		if v.Name == g.Name {
+			k = i
+		}
+	}
+	if k == -1 {
+		panic("Table not found")
+	}
+	realTable := g.Host.Tables[k]
+	for idx, o := range realTable.Rows {
+		for _, i := range g.Rows {
+			if compareRows(o, i) {
+				g.Host.Tables[k].Rows = append(
+					g.Host.Tables[k].Rows[:idx],
+					g.Host.Tables[k].Rows[idx+1:]...,
+				)
+			}
+		}
+	}
+}
+
 func (g *GorageTable) Select(columns []string) *GorageTable {
 	var columnIdx []int
 	tmp := &GorageTable{
-		Name:    "",
+		Name:    g.Name,
 		Columns: columns,
+		Host:    g.Host,
 		Rows:    [][]interface{}{},
 	}
 	for i, v := range g.Columns {
