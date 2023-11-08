@@ -32,7 +32,7 @@ func TestCreateTable(t *testing.T) {
 func TestInsert(t *testing.T) {
 	g := OpenGorage("./test.json")
 	userTable := g.FromTable("User")
-	userTable.Insert([]interface{}{"Lars goofy", "Oeli", 1, nil})
+	userTable.Insert([]interface{}{"Moin", "aa", 2, 30.5})
 	g.Save()
 }
 
@@ -52,9 +52,9 @@ func TestWhere(t *testing.T) {
 	g := OpenGorage("./test.json")
 	userTable := g.
 		FromTable("User").
-		Where(":FirstName = 'Lars goofy' & :Age = 5 & :IQ != 85.5").
+		Where(":FirstName = 'Moin1' | ( :Age = 2 & ( :IQ = 85.5 | :IQ = 90 ) )").
 		Select([]string{"FirstName", "LastName", "Age", "IQ"})
-
+	println("results")
 	for _, v := range userTable.Rows {
 		for _, j := range v {
 			switch j.(type) {

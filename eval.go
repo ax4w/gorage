@@ -56,7 +56,7 @@ func eval(f *fragment) *fragment {
 		}
 		return &fragment{value: []byte("f")}
 	}
-	println(string(m.value))
+	//println(string(m.value))
 	println("UNREACHABLE")
 	return nil
 }
@@ -65,16 +65,51 @@ func toTree(nodes []*fragment) []*fragment {
 	var op string
 	var query []*fragment
 	var base []*fragment
-	for _, v := range nodes {
+	for i := 0; i < len(nodes); i++ {
 		isOp := false
 		for _, k := range strongSplit {
-			if compareByteArray([]byte(k), v.value) { //k == v.value {
+			if compareByteArray([]byte(k), nodes[i].value) { //k == v.value {
 				op = k
 				isOp = true
 			}
 		}
+		if string(nodes[i].value) == "(" && !isOp {
+			openCount := 1
+			var tmp []*fragment
+			i += 1
+			for ; i < len(nodes); i++ {
+				if string(nodes[i].value) == "(" {
+					openCount++
+				}
+				if string(nodes[i].value) == ")" {
+					openCount--
+					if openCount == 0 {
+						break
+					}
+
+				}
+				tmp = append(tmp, nodes[i])
+			}
+			if i == len(nodes) {
+				panic("No ) found")
+			}
+			sub := toTree(tmp)
+			//traverseTree(sub[0])
+			query = append(query, sub[0])
+			if len(query) == 2 {
+				nq := &fragment{
+					value: []byte(op),
+					left:  query[0],
+					right: query[1],
+				}
+				query = []*fragment{}
+				op = ""
+				query = append(query, nq)
+			}
+			continue
+		}
 		if !isOp {
-			base = append(base, v)
+			base = append(base, nodes[i])
 		}
 		if len(base) == 3 {
 			ne := &fragment{
@@ -96,7 +131,17 @@ func toTree(nodes []*fragment) []*fragment {
 			base = []*fragment{}
 		}
 	}
+	//traverseTree(query[0])
 	return query
+}
+
+func traverseTree(t *fragment) {
+	if t == nil {
+		return
+	}
+	traverseTree(t.left)
+	println(string(t.value))
+	traverseTree(t.right)
 }
 
 func parse(f string) []*fragment {

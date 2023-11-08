@@ -137,7 +137,6 @@ func compareRows(a, b []interface{}) bool {
 
 func (g *GorageTable) Delete() {
 	k := -1
-	println(g.Host)
 	for i, v := range g.Host.Tables {
 		if v.Name == g.Name {
 			k = i
