@@ -11,8 +11,8 @@ type fragment struct {
 }
 
 var (
-	keywords    = []string{"&", "|", "=", "!="}
-	strongSplit = []string{"&", "|"}
+	keywords    = []string{"&", "!&", "|", "!|", "=", "!="}
+	strongSplit = []string{"&", "!&", "|", "!|"}
 )
 
 func compareByteArray(b1, b2 []byte) bool {
@@ -55,8 +55,18 @@ func eval(f *fragment) *fragment {
 			return &fragment{value: []byte("t")}
 		}
 		return &fragment{value: []byte("f")}
+	case "!&":
+		if !(compareByteArray(l.value, []byte("t")) && compareByteArray(r.value, []byte("t"))) {
+			return &fragment{value: []byte("t")}
+		}
+		return &fragment{value: []byte("f")}
+	case "!|":
+		if !(compareByteArray(l.value, []byte("t")) || compareByteArray(r.value, []byte("t"))) {
+			return &fragment{value: []byte("t")}
+		}
+		return &fragment{value: []byte("f")}
 	}
-	//println(string(m.value))
+	println(string(m.value))
 	println("UNREACHABLE")
 	return nil
 }

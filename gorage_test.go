@@ -52,7 +52,7 @@ func TestWhere(t *testing.T) {
 	g := OpenGorage("./test.json")
 	userTable := g.
 		FromTable("User").
-		Where(":FirstName = 'Moin1' | ( :Age = 2 & ( :IQ = 85.5 | :IQ = 90 ) )").
+		Where(":FirstName = 'Moin' !& ( :Age = 2 & ( :IQ = 85.5 !| :IQ = 90 ) )").
 		Select([]string{"FirstName", "LastName", "Age", "IQ"})
 	println("results")
 	for _, v := range userTable.Rows {

@@ -13,4 +13,4 @@ A simple to use local storage system, which uses json files to store data and pr
 - [X] Delete statement
 - [ ] Eval Safety
 - [ ] Concurrency 
-- [ ] Advanced eval:  (, ), xor, not
+- [X] Advanced eval:  (, ), NAND, NOR
