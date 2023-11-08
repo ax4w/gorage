@@ -14,3 +14,99 @@ A simple to use local storage system, which uses json files to store data and pr
 - [ ] Eval Safety
 - [ ] Concurrency 
 - [X] Advanced eval:  (, ), NAND, NOR
+
+## Create Storage and Tables
+### CreateGorage
+
+### CreateTable
+
+### AddColumn
+
+## Data Operations
+### FromTable
+The `FromTable` function takes a string, which is the name of the table and returns a pointer to that table
+### Delete
+The `Delete` function takes no parameters and should only be called after the `.Where()`call, except you want to delete every row.
+
+The delete function directly write to the real table in the memory.
+
+Use `.Save()` to save it to the file for permanent change.
+
+### Insert
+The `Insert` function takes an array of `[]interface{}`. This list has to be the same length as the columns.
+
+If you want to leave a cell blank just use `nil`.
+
+Use `.Save()` to save it to the file for permanent change.
+
+### Select
+The `Select` function takes an array of strings, which represent the column names and returns a table, which only contains these columns.
+
+This table is NOT persistent
+### Where
+The `Where` function take a string and can be used on a table to apply a filter. To compare data from the rows you can use :(Column).
+
+This table is NOT persistent
+#### Example
+Let's say we have this table:
+
+
+Name | Age | Country
+--|---|---|
+William | 20 | England
+William | 22 | USA
+
+If we now want to apply a filter to retrieve the rows where the name is 'William' we can do:
+> `":Name = 'William' `
+
+If we now want to apply a filter to retrieve the rows where the name is 'William' and the country is england we can do:
+>`":Name = 'William' & :Country = 'England'`
+
+See Eval Operations for syntax and operators
+
+### Examples
+
+Let's say we have this table:
+Name | Age | Country
+--|---|---|
+William | 20 | England
+William | 22 | USA
+
+#### Select
+```go
+g := OpenGorage("./test.json")
+userTable := g.FromTable("User").Where(":Name = 'William' & :Country = 'USA' ").Select([]string{"Name", "Age"})
+```
+
+#### Delete
+```go
+g := OpenGorage("./test.json")
+g.FromTable("User").Where(":Name = 'William' & :Age = 20").Delete()
+g.Save()
+```
+
+#### Insert
+```go
+g := OpenGorage("./test.json")
+userTable := g.FromTable("User")
+userTable.Insert([]interface{}{"Thomas", 33, nil})
+userTable.Insert([]interface{}{"Carlos", 55, "USA"})
+userTable.Insert([]interface{}{"Anna", nil, "USA"})
+g.Save()
+```
+
+## Eval Operations
+Eval currently supports & (AND), | (OR), !& (NAND), !| (NOR) and Braces ( ). 
+
+**Important**: Spaces are important!
+
+> Example 1: `"a = 5 | ( name = 'William' !| name = 'James' )"`
+> 
+> Here is checked, if a is 5 or if the name is William or James
+
+
+> Example 1: `"a = 5 !| b = 10"`
+>
+> Here is checked, if not a is 5 or b is 10
+
+
