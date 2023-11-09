@@ -47,6 +47,10 @@ func computeHash(data []interface{}) uint32 {
 	return ha.Sum32()
 }
 
+func compareRows(a, b []interface{}) bool {
+	return computeHash(a) == computeHash(b)
+}
+
 func validateDatatype(is interface{}, c GorageColumn) bool {
 	switch is.(type) {
 	case int:

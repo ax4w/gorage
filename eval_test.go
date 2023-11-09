@@ -17,8 +17,9 @@ import (
 //
 
 func TestEval(t *testing.T) {
+	//println(float64(int(rune('a'))))
 	//f := fmt.Sprintf("'%s' = 'hallo welt' & %d = 3 & %d = 4", "hallo welt", 3, 4)
-	p := parse("( 90 = 85.5 | 90 = 90 )")
+	p := parse("a == 91 && 80 >= 70")
 	tr := toTree(p)
 	//traverseTree(tr[0])
 	//println(len(tr))

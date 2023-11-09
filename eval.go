@@ -1,6 +1,7 @@
 package Gorage
 
 import (
+	"strconv"
 	"strings"
 )
 
@@ -27,6 +28,19 @@ func compareByteArray(b1, b2 []byte) bool {
 	return true
 }
 
+func convertBytesToFloat(v []byte) float64 {
+	s := string(v)
+	r, err := strconv.ParseFloat(s, 64)
+	if err != nil {
+		//check if
+		if len(s) == 1 { //prob. a char
+			return float64(int(rune(s[0]))) //formatted like +9.00..e+001 - not good for comparison
+		}
+		panic("Value used in >=,<=,<,> is not a number")
+	}
+	return r
+}
+
 func eval(f *token) *token {
 	if f.left == nil && f.right == nil {
 		return f
@@ -35,6 +49,34 @@ func eval(f *token) *token {
 	m := f
 	r := eval(f.right)
 	switch string(m.value) {
+	case "<":
+		lv := convertBytesToFloat(l.value)
+		rv := convertBytesToFloat(r.value)
+		if lv < rv {
+			return &token{value: []byte("t")}
+		}
+		return &token{value: []byte("f")}
+	case ">":
+		lv := convertBytesToFloat(l.value)
+		rv := convertBytesToFloat(r.value)
+		if lv > rv {
+			return &token{value: []byte("t")}
+		}
+		return &token{value: []byte("f")}
+	case ">=":
+		lv := convertBytesToFloat(l.value)
+		rv := convertBytesToFloat(r.value)
+		if lv >= rv {
+			return &token{value: []byte("t")}
+		}
+		return &token{value: []byte("f")}
+	case "<=":
+		lv := convertBytesToFloat(l.value)
+		rv := convertBytesToFloat(r.value)
+		if lv <= rv {
+			return &token{value: []byte("t")}
+		}
+		return &token{value: []byte("f")}
 	case "==":
 		if compareByteArray(l.value, r.value) {
 			return &token{value: []byte("t")}
@@ -66,8 +108,7 @@ func eval(f *token) *token {
 		}
 		return &token{value: []byte("f")}
 	}
-	println(string(m.value))
-	println("UNREACHABLE")
+	panic("UNREACHABLE: NOT A VALID OPERATOR " + string(m.value))
 	return nil
 }
 

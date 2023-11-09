@@ -25,10 +25,6 @@ type GorageTable struct {
 	host    *Gorage
 }
 
-func (g *Gorage) getRowAndIndexByHash(hash int64) ([]interface{}, int) {
-	return nil, 0
-}
-
 func (g *GorageTable) getColAndIndexByName(name string) (*GorageColumn, int) {
 	if len(g.Columns) == 0 {
 		return nil, -1
@@ -36,13 +32,13 @@ func (g *GorageTable) getColAndIndexByName(name string) (*GorageColumn, int) {
 	for i, v := range g.Columns {
 		if name == v.Name {
 			if g.host.Log {
-				gprint("AddColumn", "Column: "+name+" added")
+				gprint("getColAndIndexByName", "Column: "+name+" found")
 			}
 			return &v, i
 		}
 	}
 	if g.host.Log {
-		gprint("AddColumn", "Column: "+name+"  was not found")
+		gprint("getColAndIndexByName", "Column: "+name+"  was not found")
 	}
 	return nil, -1
 }
@@ -130,7 +126,7 @@ func (g *GorageTable) Where(f string) *GorageTable {
 					} else {
 						switch v[colIdx].(type) {
 						case float32:
-							println("IS THIS EVEN A THING?")
+							println("IS THIS EVEN BEING USED ON MOST MACHINES?")
 							break
 						case float64:
 							k = strconv.FormatFloat(v[colIdx].(float64), 'f', -1, 64)
@@ -155,20 +151,18 @@ func (g *GorageTable) Where(f string) *GorageTable {
 	return res
 }
 
-func compareRows(a, b []interface{}) bool {
-	return computeHash(a) == computeHash(b)
-}
-
 /*
 data is a map, where the key is the column and the interace is the value.
 the datatype of the interface needs to match the datatype, which the column represents
 */
 func (g *GorageTable) Update(data map[string]interface{}) {
-	rt := g.host.FromTable(g.Name)
+	rt := g.host.FromTable(g.Name) // we need to get the table again to do persistent changes to it in memory
 	for _, v := range g.Rows {
 		for i, r := range rt.Rows {
 			if computeHash(v) != computeHash(r) {
-				gprint("Update", fmt.Sprintf("Hash not matching %d != %d", computeHash(v), computeHash(r)))
+				if g.host.Log {
+					gprint("Update", fmt.Sprintf("Hash not matching %d != %d", computeHash(v), computeHash(r)))
+				}
 				continue
 			}
 			for key, val := range data {
@@ -177,7 +171,9 @@ func (g *GorageTable) Update(data map[string]interface{}) {
 					panic("No matching column found or mismatch datatype")
 				}
 				rt.Rows[i][index] = val
-				gprint("Update", "Updated cell")
+				if g.host.Log {
+					gprint("Update", "Updated cell")
+				}
 			}
 		}
 	}
@@ -187,28 +183,17 @@ func (g *GorageTable) Update(data map[string]interface{}) {
 Deletes Rows
 */
 func (g *GorageTable) Delete() {
-	k := -1
-	for i, v := range g.host.Tables {
-		if v.Name == g.Name {
-			k = i
-		}
-	}
-	if k == -1 {
+	realTable := g.host.FromTable(g.Name) // we need to get the table again to do persistent changes to it in memory
+	if realTable == nil {
 		panic("Table not found")
 	}
-	realTable := g.host.Tables[k]
 	for idx, o := range realTable.Rows {
 		for _, i := range g.Rows {
 			if compareRows(o, i) {
-				if idx+1 > len(g.host.Tables[k].Rows) {
-					g.host.Tables[k].Rows = append(
-						g.host.Tables[k].Rows[idx:],
-					)
+				if idx+1 > len(realTable.Rows) {
+					realTable.Rows = append(realTable.Rows[idx:])
 				} else {
-					g.host.Tables[k].Rows = append(
-						g.host.Tables[k].Rows[:idx],
-						g.host.Tables[k].Rows[idx+1:]...,
-					)
+					realTable.Rows = append(realTable.Rows[:idx], realTable.Rows[idx+1:]...)
 				}
 			}
 		}

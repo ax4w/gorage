@@ -69,9 +69,9 @@ func TestWhere(t *testing.T) {
 	g := OpenGorage("./test")
 	userTable := g.
 		FromTable("User").
-		Where(":FirstName == 'William' && :Age == 2").
+		Where("( :FirstName == 'William' && :Age == 2 ) || :IQ >= 90.0").
 		Select([]string{"FirstName", "LastName", "Age"})
-	if len(userTable.Rows) != 1 {
+	if len(userTable.Rows) != 2 {
 		t.Fatalf("More than expected")
 	}
 	for _, v := range userTable.Rows {
