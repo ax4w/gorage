@@ -25,6 +25,10 @@ type GorageTable struct {
 	Host    *Gorage `json:"-"`
 }
 
+func (g *Gorage) getRowAndIndexByHash(hash int64) ([]interface{}, int) {
+	return nil, 0
+}
+
 func (g *GorageTable) getColAndIndexByName(name string) (*GorageColumn, int) {
 	if len(g.Columns) == 0 {
 		return nil, -1
@@ -43,6 +47,27 @@ func (g *GorageTable) getColAndIndexByName(name string) (*GorageColumn, int) {
 	return nil, -1
 }
 
+/*
+the name is the column name
+*/
+func (g *GorageTable) RemoveColumn(name string) *GorageTable {
+	c, idx := g.getColAndIndexByName(name)
+	if c == nil {
+		return g
+	}
+	g.Columns = append(g.Columns[:idx], g.Columns[idx+1:]...)
+	//remove cells
+	for i := 0; i < len(g.Rows); i++ {
+		//cpy := g.Rows[i]
+		//g.Rows[i] = []interface{}{}
+		g.Rows[i] = append(g.Rows[i][:idx], g.Rows[i][idx+1:]...)
+	}
+	return g
+}
+
+/*
+name is the name of the column. The datatype can be choosen from the provieded and implemented datatypes (f.e. INT,STRING)
+*/
 func (g *GorageTable) AddColumn(name string, datatype int) *GorageTable {
 	if v, _ := g.getColAndIndexByName(name); v == nil {
 		g.Columns = append(g.Columns, GorageColumn{
@@ -51,6 +76,17 @@ func (g *GorageTable) AddColumn(name string, datatype int) *GorageTable {
 		})
 		if g.Host.Log {
 			gprint("AddColumn", "Column: "+name+" added")
+		}
+		if len(g.Rows) != 0 {
+			if g.Host.Log {
+				gprint("AddColumn", "Table has rows, filling up the holes")
+			}
+			for i := 0; i < len(g.Rows); i++ {
+				g.Rows[i] = append(g.Rows[i], nil)
+			}
+			if g.Host.Log {
+				gprint("AddColumn", "Filled up the holes")
+			}
 		}
 
 	} else {
@@ -61,6 +97,9 @@ func (g *GorageTable) AddColumn(name string, datatype int) *GorageTable {
 	return g
 }
 
+/*
+f is the eval string. See github README.md for examples
+*/
 func (g *GorageTable) Where(f string) *GorageTable {
 	res := &GorageTable{
 		Name:    g.Name,
@@ -85,34 +124,19 @@ func (g *GorageTable) Where(f string) *GorageTable {
 					}
 					k = fmt.Sprintf("'%s'", v[colIdx])
 					break
-				case INT:
+				case FLOAT, INT:
 					if v[colIdx] == nil {
 						k = fmt.Sprintf("f")
 					} else {
 						switch v[colIdx].(type) {
 						case float32:
-							println("UNREACHABLE")
+							println("IS THIS EVEN A THING?")
 							break
 						case float64:
 							k = strconv.FormatFloat(v[colIdx].(float64), 'f', -1, 64)
 							break
 						default:
 							k = fmt.Sprintf("%d", v[colIdx])
-						}
-
-					}
-					break
-				case FLOAT:
-					if v[colIdx] == nil {
-						k = fmt.Sprintf("f")
-					} else {
-						switch v[colIdx].(type) {
-						case float32:
-							println("UNREACHABLE")
-							break
-						case float64:
-							k = strconv.FormatFloat(v[colIdx].(float64), 'f', -1, 64)
-							break
 						}
 					}
 
@@ -135,6 +159,33 @@ func compareRows(a, b []interface{}) bool {
 	return computeHash(a) == computeHash(b)
 }
 
+/*
+data is a map, where the key is the column and the interace is the value.
+the datatype of the interface needs to match the datatype, which the column represents
+*/
+func (g *GorageTable) Update(data map[string]interface{}) {
+	rt := g.Host.FromTable(g.Name)
+	for _, v := range g.Rows {
+		for i, r := range rt.Rows {
+			if computeHash(v) != computeHash(r) {
+				gprint("Update", fmt.Sprintf("Hash not matching %d != %d", computeHash(v), computeHash(r)))
+				continue
+			}
+			for key, val := range data {
+				c, index := rt.getColAndIndexByName(key)
+				if c == nil || !validateDatatype(val, *c) {
+					panic("No matching column found or mismatch datatype")
+				}
+				rt.Rows[i][index] = val
+				gprint("Update", "Updated cell")
+			}
+		}
+	}
+}
+
+/*
+Deletes rows
+*/
 func (g *GorageTable) Delete() {
 	k := -1
 	for i, v := range g.Host.Tables {
@@ -159,12 +210,14 @@ func (g *GorageTable) Delete() {
 						g.Host.Tables[k].Rows[idx+1:]...,
 					)
 				}
-
 			}
 		}
 	}
 }
 
+/*
+columns is a string array, in which the wanted columns are stored
+*/
 func (g *GorageTable) Select(columns []string) *GorageTable {
 	var columnIdx []int
 	tmp := &GorageTable{
@@ -204,6 +257,12 @@ func (g *GorageTable) isDuplicate(hash uint32) bool {
 	return false
 }
 
+/*
+The data is the data that shall be inserted. The len(data) needs to match the number of columns.
+If a cell shall be empty you can use nil.
+
+*Remember*: You can not compare in nil value, when using the column in a where condition
+*/
 func (g *GorageTable) Insert(data []interface{}) {
 	if len(data) != len(g.Columns) {
 		panic(fmt.Errorf("column count and data count are different"))
@@ -215,32 +274,7 @@ func (g *GorageTable) Insert(data []interface{}) {
 		return
 	}
 	for i, v := range g.Columns {
-		switch data[i].(type) {
-		case int:
-			if v.Datatype != INT {
-				panic("Mismatch in Datatype")
-			}
-		case string:
-			if v.Datatype != STRING {
-				panic("Mismatch in Datatype")
-			}
-		case bool:
-			if v.Datatype != BOOLEAN {
-				panic("Mismatch in Datatype")
-			}
-		case float64:
-			if v.Datatype != FLOAT {
-				panic("Mismatch in Datatype")
-			}
-		case float32:
-			if v.Datatype != FLOAT {
-				panic("Mismatch in Datatype")
-			}
-		default:
-			if data[i] != nil {
-				panic("Unknown datatype")
-			}
-		}
+		validateDatatype(data[i], v)
 	}
 	g.Rows = append(g.Rows, data)
 }

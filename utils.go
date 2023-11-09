@@ -46,3 +46,34 @@ func computeHash(data []interface{}) uint32 {
 	ha.Write([]byte(h))
 	return ha.Sum32()
 }
+
+func validateDatatype(is interface{}, c GorageColumn) bool {
+	switch is.(type) {
+	case int:
+		if c.Datatype != INT {
+			return false
+		}
+	case string:
+		if c.Datatype != STRING {
+			return false
+		}
+	case bool:
+		if c.Datatype != BOOLEAN {
+			return false
+		}
+	case float64:
+		if c.Datatype != FLOAT {
+			return false
+		}
+	case float32:
+		if c.Datatype != FLOAT {
+			return false
+		}
+	default:
+		if is != nil {
+			return false
+		}
+	}
+	return true
+
+}

@@ -13,6 +13,10 @@ type Gorage struct {
 	Tables          []GorageTable
 }
 
+/*
+Select a table from the loaded Gorage
+*/
+
 func (g *Gorage) FromTable(name string) *GorageTable {
 	k := -1
 	for i, v := range g.Tables {
@@ -24,6 +28,9 @@ func (g *Gorage) FromTable(name string) *GorageTable {
 	return &g.Tables[k]
 }
 
+/*
+Check if a given table exists
+*/
 func (g *Gorage) TableExists(name string) bool {
 	for _, v := range g.Tables {
 		if v.Name == name {
@@ -32,6 +39,12 @@ func (g *Gorage) TableExists(name string) bool {
 	}
 	return false
 }
+
+/*
+Create a table.
+
+Two tables with the same name in the same gorage are NOT possible
+*/
 
 func (g *Gorage) CreateTable(name string) *GorageTable {
 	if g.TableExists(name) {
@@ -50,6 +63,9 @@ func (g *Gorage) CreateTable(name string) *GorageTable {
 	return &g.Tables[len(g.Tables)-1]
 }
 
+/*
+Save the loaded gorage
+*/
 func (g *Gorage) Save() {
 	err := os.Truncate(g.Path, 0)
 	if err != nil {
@@ -62,6 +78,9 @@ func (g *Gorage) Save() {
 	}
 }
 
+/*
+Open a gorage from a path
+*/
 func OpenGorage(path string) *Gorage {
 	f, err := os.Open(path)
 	if err != nil {
@@ -80,6 +99,15 @@ func OpenGorage(path string) *Gorage {
 	return &g
 }
 
+/*
+Create a new Gorage
+
+path: the path where it should be stored
+
+allowDuplicates: If a table can contain multiple identical datasets
+
+log: If you want to get spammed :^)
+*/
 func CreateNewGorage(path string, allowDuplicates, log bool) *Gorage {
 	if !fileExists(path) {
 		f, err := os.Create(path)

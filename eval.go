@@ -141,7 +141,6 @@ func toTree(nodes []*fragment) []*fragment {
 			base = []*fragment{}
 		}
 	}
-	//traverseTree(query[0])
 	return query
 }
 

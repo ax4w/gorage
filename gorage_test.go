@@ -7,54 +7,73 @@ import (
 )
 
 func TestCreateFile(t *testing.T) {
-	CreateNewGorage("./test.json", false, true)
-	_, err := os.Stat("./test.json")
+	if fileExists("./test") {
+		err := os.Remove("./test")
+		if err != nil {
+			t.Fatalf("Error removing old test file")
+			return
+		}
+	}
+	CreateNewGorage("./test", false, false)
+	_, err := os.Stat("./test")
 	if os.IsNotExist(err) {
 		t.Fatalf("File was not created")
 	}
 }
 
 func TestCreateTable(t *testing.T) {
-	g := OpenGorage("./test.json")
+	g := OpenGorage("./test")
 	table := g.CreateTable("User")
 	if table != nil {
 		table.AddColumn("FirstName", STRING).
 			AddColumn("LastName", STRING).
 			AddColumn("Age", INT).
 			AddColumn("IQ", FLOAT)
-	}
-	if !g.TableExists("User") {
+	} else {
 		t.Fatalf("Table was not created")
 	}
 	g.Save()
 }
 
 func TestInsert(t *testing.T) {
-	g := OpenGorage("./test.json")
+	g := OpenGorage("./test")
 	userTable := g.FromTable("User")
-	userTable.Insert([]interface{}{"Moin", "aa", 2, 30.5})
+	userTable.Insert([]interface{}{"James", "aa", 2, 85.5})
+	userTable.Insert([]interface{}{"Carl", "aa", 3, 90.5})
+	res := g.
+		FromTable("User").
+		Where(":FirstName = 'James'")
+	if len(res.Rows) != 1 {
+		t.Fatalf("Row was not inserted")
+	}
 	g.Save()
 }
 
-func TestDelete(t *testing.T) {
-	g := OpenGorage("./test.json")
-	g.
+func TestUpdate(t *testing.T) {
+	g := OpenGorage("./test")
+	g.FromTable("User").
+		Where(":FirstName = 'James'").
+		Update(map[string]interface{}{
+			"FirstName": "William",
+		})
+	res := g.
 		FromTable("User").
-		Where(":FirstName = 'Lars goofy' & :Age = 5").
-		Delete()
-	_ = g.
-		FromTable("User").
-		Where(":FirstName = 'Lars goofy' & :Age = 5").
-		Select([]string{"FirstName", "LastName", "Age"})
+		Where(":FirstName = 'William'")
+	if len(res.Rows) != 1 {
+		t.Fatalf("Row was not inserted")
+	}
 	g.Save()
 }
+
 func TestWhere(t *testing.T) {
-	g := OpenGorage("./test.json")
+	g := OpenGorage("./test")
 	userTable := g.
 		FromTable("User").
-		Where(":FirstName = 'Moin' !& ( :Age = 2 & ( :IQ = 85.5 !| :IQ = 90 ) )").
+		Where(":FirstName = 'William' & :Age = 2").
 		Select([]string{"FirstName", "LastName", "Age", "IQ"})
-	println("results")
+	if len(userTable.Rows) != 1 {
+		t.Fatalf("More than expected")
+	}
 	for _, v := range userTable.Rows {
 		for _, j := range v {
 			switch j.(type) {
@@ -72,6 +91,32 @@ func TestWhere(t *testing.T) {
 				}
 			}
 		}
+	}
+	g.Save()
+}
+
+func TestDelete(t *testing.T) {
+	g := OpenGorage("./test")
+	g.
+		FromTable("User").
+		Where(":FirstName = 'Carl'").
+		Delete()
+	r := g.
+		FromTable("User").
+		Where(":FirstName = 'Carl'")
+	if len(r.Rows) != 0 {
+		t.Fatalf("Delete did not work")
+	}
+	g.Save()
+}
+
+func TestRemoveColumn(t *testing.T) {
+	g := OpenGorage("./test")
+	table := g.FromTable("User")
+	l := len(table.Columns)
+	table.RemoveColumn("IQ")
+	if l-len(table.Columns) != 1 {
+		t.Fatalf("Expeced one, got a nother value")
 	}
 	g.Save()
 }

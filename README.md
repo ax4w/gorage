@@ -9,18 +9,41 @@ A simple to use local storage system, which uses json files to store data and pr
 - [X] Insert statement
 - [X] Create statement
 - [X] Select statement
-- [ ] Update statement
+- [X] Update statement
 - [X] Delete statement
 - [ ] Eval Safety
 - [ ] Concurrency 
 - [X] Advanced eval:  (, ), NAND, NOR
 
 ## Create Storage and Tables
-### CreateGorage
+### CreateNewGorage
+> `CreateNewGorage("./test", false, true)`
+1. Paramter is the path and the file, which you want to create
+2. Paramter is a boolean, if duplicate rows shall be allowed
+3. Paramter is a boolean, if you want to see the log
 
+### OpenGorage
+> `g := OpenGorage("./test")`
+
+Open Gorage by path
 ### CreateTable
+> `g := OpenGorage("./test.json")`
+> 
+> `table := g.CreateTable("Example")`
+1. Open Gorage
 
 ### AddColumn
+
+```go
+g := OpenGorage("./test.json")
+table := g.CreateTable("User")
+if table != nil {
+	table.AddColumn("FirstName", STRING).
+		AddColumn("LastName", STRING).
+		AddColumn("Age", INT).
+		AddColumn("IQ", INT)
+}
+```
 
 ## Data Operations
 ### FromTable
