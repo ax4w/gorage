@@ -135,7 +135,7 @@ g.Save()
 ```
 
 ## Eval Operations
-Eval currently supports & (AND), | (OR), !& (NAND), !| (NOR) and Braces ( ). 
+Eval currently supports && (AND), || (OR), !& (NAND), !| (NOR), == (EQUAL), != (NOT EQUAL), <, <=, >, >= and Braces ( ). 
 
 **Important**: Spaces are important!
 
