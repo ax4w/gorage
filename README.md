@@ -85,10 +85,10 @@ William | 20 | England
 William | 22 | USA
 
 If we now want to apply a filter to retrieve the rows where the name is 'William' we can do:
-> `":Name = 'William' `
+> `":Name == 'William' `
 
 If we now want to apply a filter to retrieve the rows where the name is 'William' and the country is england we can do:
->`":Name = 'William' & :Country = 'England'`
+>`":Name == 'William' && :Country == 'England'`
 
 See Eval Operations for syntax and operators
 
@@ -104,13 +104,13 @@ William | 22 | USA
 #### Select
 ```go
 g := OpenGorage("./test.json")
-userTable := g.FromTable("User").Where(":Name = 'William' & :Country = 'USA' ").Select([]string{"Name", "Age"})
+userTable := g.FromTable("User").Where(":Name == 'William' && :Country == 'USA' ").Select([]string{"Name", "Age"})
 ```
 
 ### Update
 ```go
 g := OpenGorage("./test.json")
-g.FromTable("User").Where(":Name = 'William' & :Age = 20").Update(map[string]interface{}{
+g.FromTable("User").Where(":Name == 'William' && :Age == 20").Update(map[string]interface{}{
 	"Name": "Tom"
 })
 g.Save()
@@ -120,7 +120,7 @@ g.Save()
 #### Delete
 ```go
 g := OpenGorage("./test.json")
-g.FromTable("User").Where(":Name = 'William' & :Age = 20").Delete()
+g.FromTable("User").Where(":Name == 'William' && :Age == 20").Delete()
 g.Save()
 ```
 
@@ -139,12 +139,12 @@ Eval currently supports & (AND), | (OR), !& (NAND), !| (NOR) and Braces ( ).
 
 **Important**: Spaces are important!
 
-> Example 1: `"a = 5 | ( name = 'William' !| name = 'James' )"`
+> Example 1: `"a == 5 || ( name == 'William' || name == 'James' )"`
 > 
 > Here is checked, if a is 5 or if the name is William or James
 
 
-> Example 1: `"a = 5 !| b = 10"`
+> Example 1: `"a == 5 !| b == 10"`
 >
 > Here is checked, if not a is 5 or b is 10
 

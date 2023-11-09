@@ -52,13 +52,13 @@ func TestInsert(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	g := OpenGorage("./test")
 	g.FromTable("User").
-		Where(":FirstName = 'James'").
+		Where(":FirstName == 'James'").
 		Update(map[string]interface{}{
 			"FirstName": "William",
 		})
 	res := g.
 		FromTable("User").
-		Where(":FirstName = 'William'")
+		Where(":FirstName == 'William'")
 	if len(res.Rows) != 1 {
 		t.Fatalf("Row was not inserted")
 	}
@@ -69,8 +69,8 @@ func TestWhere(t *testing.T) {
 	g := OpenGorage("./test")
 	userTable := g.
 		FromTable("User").
-		Where(":FirstName = 'William' & :Age = 2").
-		Select([]string{"FirstName", "LastName", "Age", "IQ"})
+		Where(":FirstName == 'William' && :Age == 2").
+		Select([]string{"FirstName", "LastName", "Age"})
 	if len(userTable.Rows) != 1 {
 		t.Fatalf("More than expected")
 	}

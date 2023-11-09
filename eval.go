@@ -4,15 +4,15 @@ import (
 	"strings"
 )
 
-type fragment struct {
+type token struct {
 	value []byte
-	left  *fragment
-	right *fragment
+	left  *token
+	right *token
 }
 
 var (
-	keywords    = []string{"&", "!&", "|", "!|", "=", "!="}
-	strongSplit = []string{"&", "!&", "|", "!|"}
+	//keywords    = []string{"&&", "!&", "||", "!|", "==", "!="}
+	strongSplit = []string{"&&", "!&", "||", "!|"}
 )
 
 func compareByteArray(b1, b2 []byte) bool {
@@ -27,7 +27,7 @@ func compareByteArray(b1, b2 []byte) bool {
 	return true
 }
 
-func eval(f *fragment) *fragment {
+func eval(f *token) *token {
 	if f.left == nil && f.right == nil {
 		return f
 	}
@@ -35,57 +35,69 @@ func eval(f *fragment) *fragment {
 	m := f
 	r := eval(f.right)
 	switch string(m.value) {
-	case "=":
+	case "==":
 		if compareByteArray(l.value, r.value) {
-			return &fragment{value: []byte("t")}
+			return &token{value: []byte("t")}
 		}
-		return &fragment{value: []byte("f")}
+		return &token{value: []byte("f")}
 	case "!=":
 		if !compareByteArray(l.value, r.value) {
-			return &fragment{value: []byte("t")}
+			return &token{value: []byte("t")}
 		}
-		return &fragment{value: []byte("f")}
-	case "&":
+		return &token{value: []byte("f")}
+	case "&&":
 		if compareByteArray(l.value, []byte("t")) && compareByteArray(r.value, []byte("t")) {
-			return &fragment{value: []byte("t")}
+			return &token{value: []byte("t")}
 		}
-		return &fragment{value: []byte("f")}
-	case "|":
+		return &token{value: []byte("f")}
+	case "||":
 		if compareByteArray(l.value, []byte("t")) || compareByteArray(r.value, []byte("t")) {
-			return &fragment{value: []byte("t")}
+			return &token{value: []byte("t")}
 		}
-		return &fragment{value: []byte("f")}
+		return &token{value: []byte("f")}
 	case "!&":
 		if !(compareByteArray(l.value, []byte("t")) && compareByteArray(r.value, []byte("t"))) {
-			return &fragment{value: []byte("t")}
+			return &token{value: []byte("t")}
 		}
-		return &fragment{value: []byte("f")}
+		return &token{value: []byte("f")}
 	case "!|":
 		if !(compareByteArray(l.value, []byte("t")) || compareByteArray(r.value, []byte("t"))) {
-			return &fragment{value: []byte("t")}
+			return &token{value: []byte("t")}
 		}
-		return &fragment{value: []byte("f")}
+		return &token{value: []byte("f")}
 	}
 	println(string(m.value))
 	println("UNREACHABLE")
 	return nil
 }
 
-func toTree(nodes []*fragment) []*fragment {
+func toTree(nodes []*token) []*token {
 	var op string
-	var query []*fragment
-	var base []*fragment
+	var query []*token
+	var base []*token
+
+	buildQuery := func() {
+		nq := &token{
+			value: []byte(op),
+			left:  query[0],
+			right: query[1],
+		}
+		query = []*token{}
+		op = ""
+		query = append(query, nq)
+	}
+
 	for i := 0; i < len(nodes); i++ {
 		isOp := false
 		for _, k := range strongSplit {
-			if compareByteArray([]byte(k), nodes[i].value) { //k == v.value {
+			if compareByteArray([]byte(k), nodes[i].value) {
 				op = k
 				isOp = true
 			}
 		}
 		if string(nodes[i].value) == "(" && !isOp {
 			openCount := 1
-			var tmp []*fragment
+			var tmp []*token
 			i += 1
 			for ; i < len(nodes); i++ {
 				if string(nodes[i].value) == "(" {
@@ -103,18 +115,9 @@ func toTree(nodes []*fragment) []*fragment {
 			if i == len(nodes) {
 				panic("No ) found")
 			}
-			sub := toTree(tmp)
-			//traverseTree(sub[0])
-			query = append(query, sub[0])
+			query = append(query, toTree(tmp)[0])
 			if len(query) == 2 {
-				nq := &fragment{
-					value: []byte(op),
-					left:  query[0],
-					right: query[1],
-				}
-				query = []*fragment{}
-				op = ""
-				query = append(query, nq)
+				buildQuery()
 			}
 			continue
 		}
@@ -122,29 +125,22 @@ func toTree(nodes []*fragment) []*fragment {
 			base = append(base, nodes[i])
 		}
 		if len(base) == 3 {
-			ne := &fragment{
+			ne := &token{
 				value: base[1].value,
-				left:  &fragment{value: base[0].value},
-				right: &fragment{value: base[2].value},
+				left:  &token{value: base[0].value},
+				right: &token{value: base[2].value},
 			}
 			query = append(query, ne)
 			if len(query) == 2 {
-				nq := &fragment{
-					value: []byte(op),
-					left:  query[0],
-					right: query[1],
-				}
-				query = []*fragment{}
-				op = ""
-				query = append(query, nq)
+				buildQuery()
 			}
-			base = []*fragment{}
+			base = []*token{}
 		}
 	}
 	return query
 }
 
-func traverseTree(t *fragment) {
+func traverseTree(t *token) {
 	if t == nil {
 		return
 	}
@@ -153,8 +149,8 @@ func traverseTree(t *fragment) {
 	traverseTree(t.right)
 }
 
-func parse(f string) []*fragment {
-	var nodes []*fragment
+func parse(f string) []*token {
+	var nodes []*token
 	split := strings.SplitAfter(f, "'")
 	var r []string
 	for _, v := range split {
@@ -177,7 +173,7 @@ func parse(f string) []*fragment {
 		}
 	}
 	for _, v := range r {
-		nodes = append(nodes, &fragment{
+		nodes = append(nodes, &token{
 			value: []byte(v),
 			left:  nil,
 			right: nil,
