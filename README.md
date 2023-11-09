@@ -62,6 +62,11 @@ If you want to leave a cell blank just use `nil`.
 
 Use `.Save()` to save it to the file for permanent change.
 
+### Update
+The `Update` function take a `map[string]interface{}`, where string is the column and interface is the new value.
+
+The new data for the column needs to match the datatype, which the column can represent.
+
 ### Select
 The `Select` function takes an array of strings, which represent the column names and returns a table, which only contains these columns.
 
@@ -90,6 +95,7 @@ See Eval Operations for syntax and operators
 ### Examples
 
 Let's say we have this table:
+
 Name | Age | Country
 --|---|---|
 William | 20 | England
@@ -99,6 +105,16 @@ William | 22 | USA
 ```go
 g := OpenGorage("./test.json")
 userTable := g.FromTable("User").Where(":Name = 'William' & :Country = 'USA' ").Select([]string{"Name", "Age"})
+```
+
+### Update
+```go
+g := OpenGorage("./test.json")
+g.FromTable("User").Where(":Name = 'William' & :Age = 20").Update(map[string]interface{}{
+	"Name": "Tom"
+})
+g.Save()
+
 ```
 
 #### Delete
