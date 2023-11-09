@@ -55,7 +55,7 @@ func (g *Gorage) CreateTable(name string) *GorageTable {
 	}
 	t := GorageTable{
 		Name:    name,
-		Host:    g,
+		host:    g,
 		Columns: []GorageColumn{},
 		Rows:    [][]interface{}{},
 	}
@@ -94,7 +94,7 @@ func OpenGorage(path string) *Gorage {
 		panic(err.Error())
 	}
 	for i, _ := range g.Tables {
-		g.Tables[i].Host = &g
+		g.Tables[i].host = &g
 	}
 	return &g
 }

@@ -22,7 +22,7 @@ type GorageTable struct {
 	Name    string
 	Columns []GorageColumn
 	Rows    [][]interface{}
-	Host    *Gorage `json:"-"`
+	host    *Gorage
 }
 
 func (g *Gorage) getRowAndIndexByHash(hash int64) ([]interface{}, int) {
@@ -35,13 +35,13 @@ func (g *GorageTable) getColAndIndexByName(name string) (*GorageColumn, int) {
 	}
 	for i, v := range g.Columns {
 		if name == v.Name {
-			if g.Host.Log {
+			if g.host.Log {
 				gprint("AddColumn", "Column: "+name+" added")
 			}
 			return &v, i
 		}
 	}
-	if g.Host.Log {
+	if g.host.Log {
 		gprint("AddColumn", "Column: "+name+"  was not found")
 	}
 	return nil, -1
@@ -74,23 +74,23 @@ func (g *GorageTable) AddColumn(name string, datatype int) *GorageTable {
 			name,
 			datatype,
 		})
-		if g.Host.Log {
+		if g.host.Log {
 			gprint("AddColumn", "Column: "+name+" added")
 		}
 		if len(g.Rows) != 0 {
-			if g.Host.Log {
-				gprint("AddColumn", "Table has rows, filling up the holes")
+			if g.host.Log {
+				gprint("AddColumn", "Table has Rows, filling up the holes")
 			}
 			for i := 0; i < len(g.Rows); i++ {
 				g.Rows[i] = append(g.Rows[i], nil)
 			}
-			if g.Host.Log {
+			if g.host.Log {
 				gprint("AddColumn", "Filled up the holes")
 			}
 		}
 
 	} else {
-		if g.Host.Log {
+		if g.host.Log {
 			gprint("AddColumn", "Column: "+name+" was not added. Duplicate?")
 		}
 	}
@@ -104,7 +104,7 @@ func (g *GorageTable) Where(f string) *GorageTable {
 	res := &GorageTable{
 		Name:    g.Name,
 		Columns: g.Columns,
-		Host:    g.Host,
+		host:    g.host,
 		Rows:    [][]interface{}{},
 	}
 	split := strings.Split(f, " ")
@@ -164,7 +164,7 @@ data is a map, where the key is the column and the interace is the value.
 the datatype of the interface needs to match the datatype, which the column represents
 */
 func (g *GorageTable) Update(data map[string]interface{}) {
-	rt := g.Host.FromTable(g.Name)
+	rt := g.host.FromTable(g.Name)
 	for _, v := range g.Rows {
 		for i, r := range rt.Rows {
 			if computeHash(v) != computeHash(r) {
@@ -184,11 +184,11 @@ func (g *GorageTable) Update(data map[string]interface{}) {
 }
 
 /*
-Deletes rows
+Deletes Rows
 */
 func (g *GorageTable) Delete() {
 	k := -1
-	for i, v := range g.Host.Tables {
+	for i, v := range g.host.Tables {
 		if v.Name == g.Name {
 			k = i
 		}
@@ -196,18 +196,18 @@ func (g *GorageTable) Delete() {
 	if k == -1 {
 		panic("Table not found")
 	}
-	realTable := g.Host.Tables[k]
+	realTable := g.host.Tables[k]
 	for idx, o := range realTable.Rows {
 		for _, i := range g.Rows {
 			if compareRows(o, i) {
-				if idx+1 > len(g.Host.Tables[k].Rows) {
-					g.Host.Tables[k].Rows = append(
-						g.Host.Tables[k].Rows[idx:],
+				if idx+1 > len(g.host.Tables[k].Rows) {
+					g.host.Tables[k].Rows = append(
+						g.host.Tables[k].Rows[idx:],
 					)
 				} else {
-					g.Host.Tables[k].Rows = append(
-						g.Host.Tables[k].Rows[:idx],
-						g.Host.Tables[k].Rows[idx+1:]...,
+					g.host.Tables[k].Rows = append(
+						g.host.Tables[k].Rows[:idx],
+						g.host.Tables[k].Rows[idx+1:]...,
 					)
 				}
 			}
@@ -223,7 +223,7 @@ func (g *GorageTable) Select(columns []string) *GorageTable {
 	tmp := &GorageTable{
 		Name:    g.Name,
 		Columns: []GorageColumn{},
-		Host:    g.Host,
+		host:    g.host,
 		Rows:    [][]interface{}{},
 	}
 	for _, v := range columns {
@@ -235,7 +235,7 @@ func (g *GorageTable) Select(columns []string) *GorageTable {
 		var t []interface{}
 		for _, i := range columnIdx {
 			if i >= len(v) {
-				if g.Host.Log {
+				if g.host.Log {
 					gprint("Select", "temp column index is out of bounds. skipping")
 				}
 				continue
@@ -267,8 +267,8 @@ func (g *GorageTable) Insert(data []interface{}) {
 	if len(data) != len(g.Columns) {
 		panic(fmt.Errorf("column count and data count are different"))
 	}
-	if !g.Host.AllowDuplicated && g.isDuplicate(computeHash(data)) {
-		if g.Host.Log {
+	if !g.host.AllowDuplicated && g.isDuplicate(computeHash(data)) {
+		if g.host.Log {
 			gprint("Insert", "Data already exists in Table. Returning")
 		}
 		return
