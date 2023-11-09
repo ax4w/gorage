@@ -42,7 +42,7 @@ func TestInsert(t *testing.T) {
 	userTable.Insert([]interface{}{"Carl", "aa", 3, 90.5})
 	res := g.
 		FromTable("User").
-		Where(":FirstName = 'James'")
+		Where(":FirstName == 'James'")
 	if len(res.Rows) != 1 {
 		t.Fatalf("Row was not inserted")
 	}
@@ -99,11 +99,11 @@ func TestDelete(t *testing.T) {
 	g := OpenGorage("./test")
 	g.
 		FromTable("User").
-		Where(":FirstName = 'Carl'").
+		Where(":FirstName == 'Carl'").
 		Delete()
 	r := g.
 		FromTable("User").
-		Where(":FirstName = 'Carl'")
+		Where(":FirstName == 'Carl'")
 	if len(r.Rows) != 0 {
 		t.Fatalf("Delete did not work")
 	}
