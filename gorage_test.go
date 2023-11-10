@@ -110,6 +110,12 @@ func TestDelete(t *testing.T) {
 	g.Save()
 }
 
+func TestAddColumn(t *testing.T) {
+	g := OpenGorage("./test")
+	g.FromTable("User").AddColumn("Lol", INT)
+	g.Save()
+}
+
 func TestRemoveColumn(t *testing.T) {
 	g := OpenGorage("./test")
 	table := g.FromTable("User")
