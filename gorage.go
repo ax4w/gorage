@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"sync"
 )
 
 type Gorage struct {
+	sync.Mutex
 	AllowDuplicated bool
 	Log             bool
 	Path            string
@@ -26,6 +28,18 @@ func (g *Gorage) FromTable(name string) *GorageTable {
 		}
 	}
 	return &g.Tables[k]
+}
+
+func (g *Gorage) RemoveTable(name string) *Gorage {
+	if !g.TableExists(name) {
+		return g
+	}
+	for i, v := range g.Tables {
+		if v.Name == name {
+			g.Tables = append(g.Tables[:i], g.Tables[i+1:]...)
+		}
+	}
+	return g
 }
 
 /*
@@ -60,6 +74,7 @@ func (g *Gorage) CreateTable(name string) *GorageTable {
 		Rows:    [][]interface{}{},
 	}
 	g.Tables = append(g.Tables, t)
+
 	return &g.Tables[len(g.Tables)-1]
 }
 
@@ -96,6 +111,13 @@ func OpenGorage(path string) *Gorage {
 	for i, _ := range g.Tables {
 		g.Tables[i].host = &g
 	}
+	go func() {
+		for _, v := range g.Tables {
+			if c := v.getColByType(TIMEOUT); c != nil {
+
+			}
+		}
+	}()
 	return &g
 }
 
