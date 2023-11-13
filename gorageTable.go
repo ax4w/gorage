@@ -113,7 +113,7 @@ func (g *GorageTable) AddColumn(name string, datatype int) *GorageTable {
 }
 
 /*
-f is the eval string. See github README.md for examples
+f is the evaluate string. See github README.md for examples
 */
 func (g *GorageTable) Where(f string) *GorageTable {
 	g.Lock()
@@ -164,7 +164,7 @@ func (g *GorageTable) Where(f string) *GorageTable {
 			tmp = append(tmp, k)
 		}
 		q := strings.Join(tmp, " ")
-		if e := runEval(q); e == "t" {
+		if e := eval(q); e == "t" {
 			res.Rows = append(res.Rows, v)
 		}
 	}

@@ -50,13 +50,13 @@ func convertBytesToFloat(v []byte) float64 {
 	return r
 }
 
-func eval(f *token) *token {
+func evaluate(f *token) *token {
 	if f.left == nil && f.right == nil {
 		return f
 	}
-	l := eval(f.left)
+	l := evaluate(f.left)
 	m := f
-	r := eval(f.right)
+	r := evaluate(f.right)
 	switch string(m.value) {
 	case "<":
 		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
@@ -330,13 +330,13 @@ func parse(f string) []*token {
 	return nodes
 }
 
-func runEval(f string) string {
+func eval(f string) string {
 	p := parse(f)
 	t := toTree(p)
 	if len(t) == 0 {
-		panic("Error while runEval")
+		panic("Error while eval")
 	}
-	e := eval(t[0])
+	e := evaluate(t[0])
 	if e == nil {
 		panic("Eval returned nil")
 	}
