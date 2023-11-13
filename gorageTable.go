@@ -221,11 +221,12 @@ func (g *GorageTable) Delete() {
 		for _, i := range g.Rows {
 			if compareRows(o, i) {
 				if idx > len(realTable.Rows) {
+
 					realTable.Unlock()
 					return
 				}
-				if idx+1 > len(realTable.Rows) {
-					realTable.Rows = append(realTable.Rows[idx:])
+				if idx == len(realTable.Rows) {
+					realTable.Rows = append(realTable.Rows[:idx-1])
 				} else {
 					realTable.Rows = append(realTable.Rows[:idx], realTable.Rows[idx+1:]...)
 				}
