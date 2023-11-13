@@ -121,8 +121,6 @@ func eval(f *token) *token {
 		}
 		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case "!=":
-		println(l.tokenType)
-		println(r.tokenType)
 		if !(l.tokenType == r.tokenType ||
 			l.tokenType == tokenTypeChar && r.tokenType == tokenTypeInt ||
 			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeChar) {
@@ -198,6 +196,7 @@ func toTree(nodes []*token) []*token {
 			var tmp []*token
 			i += 1
 			for ; i < len(nodes); i++ {
+				//println(string(nodes[i].value))
 				if string(nodes[i].value) == "(" {
 					openCount++
 				}
@@ -257,6 +256,9 @@ func splitForStrings(f string) (r []string) {
 			if inString {
 				tmp += string(v)
 				inString = false
+				r = append(r, tmp)
+				tmp = ""
+				continue
 			}
 			inString = true
 			r = append(r, tmp)
@@ -265,12 +267,18 @@ func splitForStrings(f string) (r []string) {
 
 		}
 	}
+	if len(tmp) > 0 {
+		r = append(r, tmp)
+	}
 	return r
 }
 
 func parse(f string) []*token {
 	var nodes []*token
 	split := splitForStrings(f)
+	if len(split) == 0 {
+		split = strings.Split(f, " ") //no string in f. We can split normal
+	}
 	for _, v := range split {
 		if strings.Contains(v, "'") {
 			tokenType := tokenTypeString
@@ -310,6 +318,7 @@ func parse(f string) []*token {
 				}
 				break
 			}
+
 			nodes = append(nodes, &token{
 				value:     []byte(k),
 				left:      nil,

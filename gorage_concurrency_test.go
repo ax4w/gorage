@@ -54,7 +54,9 @@ func TestConcurrency(t *testing.T) {
 		group.Add(1)
 		go func(k int) {
 			defer group.Done()
-			table1.Where(":Number == 1337").Delete()
+			table1.
+				Where(":Number == 1337").
+				Delete()
 		}(i)
 	}
 	group.Wait()

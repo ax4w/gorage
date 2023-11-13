@@ -20,7 +20,7 @@ func TestEval(t *testing.T) {
 	//println(float64(int(rune('a'))))
 	//f := fmt.Sprintf("'%s' = 'hallo welt' & %d = 3 & %d = 4", "hallo welt", 3, 4)
 
-	p := parse("1 != 1 || 'goofy' == 'goofy'")
+	p := parse("( 'William' == 'William' && 2 == 2 ) || 85.5 >= 90.0")
 	tr := toTree(p)
 	//traverseTree(tr[0])
 	//println(len(tr))
