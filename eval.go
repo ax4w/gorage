@@ -5,10 +5,19 @@ import (
 	"strings"
 )
 
+const (
+	tokenTypeInt     = 1
+	tokenTypeString  = 2
+	tokenTypeFloat   = 3
+	tokenTypeBoolean = 4
+	tokenTypeChar    = 5
+)
+
 type token struct {
-	value []byte
-	left  *token
-	right *token
+	value     []byte
+	left      *token
+	right     *token
+	tokenType int
 }
 
 var (
@@ -50,63 +59,111 @@ func eval(f *token) *token {
 	r := eval(f.right)
 	switch string(m.value) {
 	case "<":
+		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
+			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt) {
+			panic("<= is only supported for int and float")
+		}
 		lv := convertBytesToFloat(l.value)
 		rv := convertBytesToFloat(r.value)
 		if lv < rv {
-			return &token{value: []byte("t")}
+			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f")}
+		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case ">":
+		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
+			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt) {
+			panic("<= is only supported for int and float")
+		}
 		lv := convertBytesToFloat(l.value)
 		rv := convertBytesToFloat(r.value)
 		if lv > rv {
-			return &token{value: []byte("t")}
+			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f")}
+		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case ">=":
+		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
+			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt) {
+			panic("<= is only supported for int and float")
+		}
 		lv := convertBytesToFloat(l.value)
 		rv := convertBytesToFloat(r.value)
 		if lv >= rv {
-			return &token{value: []byte("t")}
+			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f")}
+		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case "<=":
+		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
+			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt) {
+			panic("<= is only supported for int and float")
+		}
 		lv := convertBytesToFloat(l.value)
 		rv := convertBytesToFloat(r.value)
 		if lv <= rv {
-			return &token{value: []byte("t")}
+			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f")}
+		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case "==":
+		if !(l.tokenType == r.tokenType ||
+			l.tokenType == tokenTypeChar && r.tokenType == tokenTypeInt ||
+			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeChar) {
+			panic("mismatching == types")
+		}
 		if compareByteArray(l.value, r.value) {
-			return &token{value: []byte("t")}
+			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f")}
+		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case "!=":
+		println(l.tokenType)
+		println(r.tokenType)
+		if !(l.tokenType == r.tokenType ||
+			l.tokenType == tokenTypeChar && r.tokenType == tokenTypeInt ||
+			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeChar) {
+			panic("mismatching == types")
+		}
 		if !compareByteArray(l.value, r.value) {
-			return &token{value: []byte("t")}
+			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f")}
+		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case "&&":
+		if !(l.tokenType == tokenTypeBoolean && r.tokenType == tokenTypeBoolean) {
+			panic("&& expects both sides to be a boolean")
+		}
 		if compareByteArray(l.value, []byte("t")) && compareByteArray(r.value, []byte("t")) {
-			return &token{value: []byte("t")}
+			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f")}
+		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case "||":
+		if !(l.tokenType == tokenTypeBoolean && r.tokenType == tokenTypeBoolean) {
+			panic("&& expects both sides to be a boolean")
+		}
 		if compareByteArray(l.value, []byte("t")) || compareByteArray(r.value, []byte("t")) {
-			return &token{value: []byte("t")}
+			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f")}
+		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case "!&":
+		if !(l.tokenType == tokenTypeBoolean && r.tokenType == tokenTypeBoolean) {
+			panic("&& expects both sides to be a boolean")
+		}
 		if !(compareByteArray(l.value, []byte("t")) && compareByteArray(r.value, []byte("t"))) {
-			return &token{value: []byte("t")}
+			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f")}
+		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case "!|":
-		if !(compareByteArray(l.value, []byte("t")) || compareByteArray(r.value, []byte("t"))) {
-			return &token{value: []byte("t")}
+		if !(l.tokenType == tokenTypeBoolean && r.tokenType == tokenTypeBoolean) {
+			panic("&& expects both sides to be a boolean")
 		}
-		return &token{value: []byte("f")}
+		if !(compareByteArray(l.value, []byte("t")) || compareByteArray(r.value, []byte("t"))) {
+			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+		}
+		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	}
 	panic("UNREACHABLE: NOT A VALID OPERATOR " + string(m.value))
 	return nil
@@ -168,8 +225,8 @@ func toTree(nodes []*token) []*token {
 		if len(base) == 3 {
 			ne := &token{
 				value: base[1].value,
-				left:  &token{value: base[0].value},
-				right: &token{value: base[2].value},
+				left:  &token{value: base[0].value, tokenType: base[0].tokenType},
+				right: &token{value: base[2].value, tokenType: base[2].tokenType},
 			}
 			query = append(query, ne)
 			if len(query) == 2 {
@@ -190,35 +247,76 @@ func traverseTree(t *token) {
 	traverseTree(t.right)
 }
 
+func splitForStrings(f string) (r []string) {
+	var tmp string
+	inString := false
+	for _, v := range f {
+		if string(v) != "'" {
+			tmp += string(v)
+		} else {
+			if inString {
+				tmp += string(v)
+				inString = false
+			}
+			inString = true
+			r = append(r, tmp)
+			tmp = ""
+			tmp += string(v)
+
+		}
+	}
+	return r
+}
+
 func parse(f string) []*token {
 	var nodes []*token
-	split := strings.SplitAfter(f, "'")
-	var r []string
+	split := splitForStrings(f)
 	for _, v := range split {
 		if strings.Contains(v, "'") {
+			tokenType := tokenTypeString
 			v = strings.ReplaceAll(v, "'", "")
 			v = strings.TrimSpace(v)
 			if len(v) == 0 {
 				continue
 			}
-			r = append(r, v)
+			//strings and chars both use ' '. The length decides if it's a char or a string
+			if len(v) == 1 {
+				tokenType = tokenTypeChar
+			}
+			nodes = append(nodes, &token{
+				value:     []byte(v),
+				left:      nil,
+				right:     nil,
+				tokenType: tokenType,
+			})
 			continue
 		}
 		s := strings.Split(v, " ")
 		for _, k := range s {
+			var tokenType int
 			k = strings.TrimSpace(k)
 			if len(k) == 0 {
 				continue
 			}
-			r = append(r, k)
+			switch k {
+			case "t", "f":
+				tokenType = tokenTypeBoolean
+				break
+			default:
+				if _, err := strconv.Atoi(k); err == nil {
+					tokenType = tokenTypeInt
+				} else if _, err = strconv.ParseFloat(k, 64); err == nil {
+					tokenType = tokenTypeFloat
+				}
+				break
+			}
+			nodes = append(nodes, &token{
+				value:     []byte(k),
+				left:      nil,
+				right:     nil,
+				tokenType: tokenType,
+			})
 		}
-	}
-	for _, v := range r {
-		nodes = append(nodes, &token{
-			value: []byte(v),
-			left:  nil,
-			right: nil,
-		})
 	}
 	return nodes
 }
