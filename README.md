@@ -143,6 +143,45 @@ userTable.Insert([]interface{}{"Anna", nil, "USA"})
 g.Save()
 ```
 
+#### Full Example
+```go
+	if fileExists("./Social") {
+		err := os.Remove("./Social")
+		if err != nil {
+			t.Fatalf("Error removing old test file")
+			return
+		}
+	}
+	gorage := CreateNewGorage("./Social", false, false)
+	userTable := gorage.CreateTable("User")
+	if userTable == nil {
+		return
+	}
+	userTable.
+		AddColumn("Name", STRING).
+		AddColumn("Handle", STRING).
+		AddColumn("Age", INT)
+	gorage.Save()
+
+	userTable.Insert([]interface{}{"Emily", "@Emily", 20})
+	userTable.Insert([]interface{}{"Emily", "@Emily_Backup", 20})
+	userTable.Insert([]interface{}{"Carl", "@Carl", 23})
+
+	gorage.Save()
+
+	userTable.
+		Where(":Handle == '@Emily'").
+		Update(map[string]interface{}{
+			"Name": "Emily MLG",
+		})
+
+	gorage.Save()
+	userTable.Where(":Handle == '@Emily_Backup' || :Name == 'Carl'").Delete()
+	gorage.Save()
+
+
+```
+
 ## Eval Operations
 Eval currently supports && (AND), || (OR), !& (NAND), !| (NOR), == (EQUAL), != (NOT EQUAL), <, <=, >, >= and Braces ( ). 
 
