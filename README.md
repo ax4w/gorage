@@ -16,7 +16,7 @@ A simple to use local storage system, which uses json files to store data and pr
 - [X] Advanced eval:  (, ), NAND, NOR
 
 ## Concurrency
-GorageTable operatrions that are designed to be used concurrent:
+GorageTable operations that are designed to be used concurrent:
 - Insert
 - Update 
 - Delete
