@@ -329,3 +329,16 @@ func parse(f string) []*token {
 	}
 	return nodes
 }
+
+func runEval(f string) string {
+	p := parse(f)
+	t := toTree(p)
+	if len(t) == 0 {
+		panic("Error while runEval")
+	}
+	e := eval(t[0])
+	if e == nil {
+		panic("Eval returned nil")
+	}
+	return string(e.value)
+}

@@ -164,7 +164,7 @@ func (g *GorageTable) Where(f string) *GorageTable {
 			tmp = append(tmp, k)
 		}
 		q := strings.Join(tmp, " ")
-		if e := eval(toTree(parse(q))[0]); e != nil && string(e.value) == "t" {
+		if e := runEval(q); e == "t" {
 			res.Rows = append(res.Rows, v)
 		}
 	}
