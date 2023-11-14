@@ -96,7 +96,7 @@ func (g *Gorage) Save() {
 /*
 Open a gorage from a path
 */
-func OpenGorage(path string) *Gorage {
+func Open(path string) *Gorage {
 	f, err := os.Open(path)
 	if err != nil {
 		panic(err.Error())
@@ -130,7 +130,7 @@ allowDuplicates: If a table can contain multiple identical datasets
 
 log: If you want to get spammed :^)
 */
-func CreateNewGorage(path string, allowDuplicates, log bool) *Gorage {
+func Create(path string, allowDuplicates, log bool) *Gorage {
 	if !fileExists(path) {
 		f, err := os.Create(path)
 		if err != nil {
@@ -152,5 +152,5 @@ func CreateNewGorage(path string, allowDuplicates, log bool) *Gorage {
 			panic(err.Error())
 		}
 	}
-	return OpenGorage(path)
+	return Open(path)
 }

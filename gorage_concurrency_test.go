@@ -15,7 +15,7 @@ func TestConcurrency(t *testing.T) {
 			return
 		}
 	}
-	g := CreateNewGorage("./concurrent", false, false)
+	g := Create("./concurrent", false, false)
 	//CreateTable should not be used concurrent UNLESS it is waited on properly.
 	//But it still can fail in concurrent usage. NOT RECOMMENDED
 	var group sync.WaitGroup

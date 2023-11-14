@@ -14,7 +14,7 @@ func TestCreateFile(t *testing.T) {
 			return
 		}
 	}
-	CreateNewGorage("./test", false, false)
+	Create("./test", false, false)
 	_, err := os.Stat("./test")
 	if os.IsNotExist(err) {
 		t.Fatalf("File was not created")
@@ -22,7 +22,7 @@ func TestCreateFile(t *testing.T) {
 }
 
 func TestCreateTable(t *testing.T) {
-	g := OpenGorage("./test")
+	g := Open("./test")
 	table := g.CreateTable("User")
 	if table != nil {
 		table.AddColumn("FirstName", STRING).
@@ -36,7 +36,7 @@ func TestCreateTable(t *testing.T) {
 }
 
 func TestInsert(t *testing.T) {
-	g := OpenGorage("./test")
+	g := Open("./test")
 	userTable := g.FromTable("User")
 	userTable.Insert([]interface{}{"James", "aa", 2, 85.5})
 	userTable.Insert([]interface{}{"Carl", "aa", 3, 90.5})
@@ -50,7 +50,7 @@ func TestInsert(t *testing.T) {
 }
 
 func TestUpdate(t *testing.T) {
-	g := OpenGorage("./test")
+	g := Open("./test")
 	g.FromTable("User").
 		Where(":FirstName == 'James'").
 		Update(map[string]interface{}{
@@ -66,7 +66,7 @@ func TestUpdate(t *testing.T) {
 }
 
 func TestWhere(t *testing.T) {
-	g := OpenGorage("./test")
+	g := Open("./test")
 	userTable := g.
 		FromTable("User").
 		Where("( :FirstName == 'William' && :Age == 2 ) || :IQ >= 90.0").
@@ -96,7 +96,7 @@ func TestWhere(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
-	g := OpenGorage("./test")
+	g := Open("./test")
 	g.
 		FromTable("User").
 		Where(":FirstName == 'Carl'").
@@ -111,13 +111,13 @@ func TestDelete(t *testing.T) {
 }
 
 func TestAddColumn(t *testing.T) {
-	g := OpenGorage("./test")
+	g := Open("./test")
 	g.FromTable("User").AddColumn("Lol", INT)
 	g.Save()
 }
 
 func TestRemoveColumn(t *testing.T) {
-	g := OpenGorage("./test")
+	g := Open("./test")
 	table := g.FromTable("User")
 	l := len(table.Columns)
 	table.RemoveColumn("IQ")
@@ -135,7 +135,7 @@ func TestComplete(t *testing.T) {
 			return
 		}
 	}
-	gorage := CreateNewGorage("./Social", false, false)
+	gorage := Create("./Social", false, false)
 	userTable := gorage.CreateTable("User")
 	if userTable == nil {
 		return

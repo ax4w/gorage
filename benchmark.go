@@ -16,7 +16,7 @@ func TestBenchmark(t *testing.T) {
 			return
 		}
 	}
-	gorage := CreateNewGorage("./benchmark", false, false)
+	gorage := Create("./benchmark", false, false)
 	randomTable := gorage.CreateTable("Random")
 	if randomTable == nil {
 		t.Fatalf("Table was not created")
@@ -55,7 +55,7 @@ func TestBenchmark(t *testing.T) {
 
 	t1 = time.Now().Unix()
 	gorage.Save()
-	gorage = OpenGorage("./benchmark")
+	gorage = Open("./benchmark")
 	t.Log(fmt.Sprintf("Saving and loading took %ds", time.Now().Unix()-t1))
 
 	t1 = time.Now().Unix()
