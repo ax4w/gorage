@@ -51,7 +51,7 @@ func compareRows(a, b []interface{}) bool {
 	return computeHash(a) == computeHash(b)
 }
 
-func validateDatatype(is interface{}, c GorageColumn) bool {
+func validateDatatype(is interface{}, c Column) bool {
 	switch is.(type) {
 	case int:
 		if c.Datatype != INT {

@@ -3,6 +3,7 @@ package Gorage
 import (
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -11,6 +12,7 @@ const (
 	tokenTypeFloat   = 3
 	tokenTypeBoolean = 4
 	tokenTypeChar    = 5
+	tokenTypeDate    = 6
 )
 
 type token struct {
@@ -24,6 +26,14 @@ var (
 	//keywords    = []string{"&&", "!&", "||", "!|", "==", "!="}
 	strongSplit = []string{"&&", "!&", "||", "!|"}
 )
+
+func validateDate(d string) bool {
+	_, err := time.Parse("2006-01-02", d)
+	if err != nil {
+		return false
+	}
+	return true
+}
 
 func compareByteArray(b1, b2 []byte) bool {
 	if len(b1) != len(b2) {
@@ -50,6 +60,37 @@ func convertBytesToFloat(v []byte) float64 {
 	return r
 }
 
+// -2 d1 is greater
+// -1 d1 is greater than
+// 0 equal
+// 1 d2 is greater than
+// 2 d2 is greater
+func compareDates(d1, d2 string) int {
+	t1, err := time.Parse("2006-01-02", d1)
+	if err != nil {
+		panic("Error parsing dates")
+	}
+	td1 := t1.Unix()
+	t2, err := time.Parse("2006-01-02", d2)
+	if err != nil {
+		panic("Error parsing dates")
+	}
+	td2 := t2.Unix()
+	switch {
+	case td1 > td2:
+		return -2
+	case td1 == td2:
+		return 0
+	case td1 >= td2:
+		return -1
+	case td2 >= td1:
+		return 1
+	case td2 > td1:
+		return 2
+	}
+	return 0
+}
+
 func evaluate(f *token) *token {
 	if f.left == nil && f.right == nil {
 		return f
@@ -62,74 +103,130 @@ func evaluate(f *token) *token {
 		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
 			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
 			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt) {
-			panic("<= is only supported for int and float")
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt ||
+			l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate) {
+			panic("< is only supported for int, float and date")
 		}
-		lv := convertBytesToFloat(l.value)
-		rv := convertBytesToFloat(r.value)
-		if lv < rv {
-			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
+			i := compareDates(string(l.value), string(r.value))
+			if i == -2 {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
+		} else {
+			lv := convertBytesToFloat(l.value)
+			rv := convertBytesToFloat(r.value)
+			if lv < rv {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
+
 	case ">":
 		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
 			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
 			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt) {
-			panic("<= is only supported for int and float")
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt ||
+			l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate) {
+			panic("<= is only supported for int, float and date")
 		}
-		lv := convertBytesToFloat(l.value)
-		rv := convertBytesToFloat(r.value)
-		if lv > rv {
-			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
+			i := compareDates(string(l.value), string(r.value))
+			if i == 2 {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
+		} else {
+			lv := convertBytesToFloat(l.value)
+			rv := convertBytesToFloat(r.value)
+			if lv > rv {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
+
 	case ">=":
 		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
 			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
 			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt) {
-			panic("<= is only supported for int and float")
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt ||
+			l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate) {
+			panic("<= is only supported for int, float and date")
 		}
-		lv := convertBytesToFloat(l.value)
-		rv := convertBytesToFloat(r.value)
-		if lv >= rv {
-			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
+			i := compareDates(string(l.value), string(r.value))
+			if i == 1 {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
+		} else {
+			lv := convertBytesToFloat(l.value)
+			rv := convertBytesToFloat(r.value)
+			if lv >= rv {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
+
 	case "<=":
 		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
 			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
 			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt) {
-			panic("<= is only supported for int and float")
+			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt ||
+			l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate) {
+			panic("<= is only supported for int, float and date")
 		}
-		lv := convertBytesToFloat(l.value)
-		rv := convertBytesToFloat(r.value)
-		if lv <= rv {
-			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
+			i := compareDates(string(l.value), string(r.value))
+			if i == -1 {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
+		} else {
+			lv := convertBytesToFloat(l.value)
+			rv := convertBytesToFloat(r.value)
+			if lv <= rv {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case "==":
 		if !(l.tokenType == r.tokenType ||
 			l.tokenType == tokenTypeChar && r.tokenType == tokenTypeInt ||
 			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeChar) {
 			panic("mismatching == types")
 		}
-		if compareByteArray(l.value, r.value) {
-			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
+			i := compareDates(string(l.value), string(r.value))
+			if i == 0 {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
+		} else {
+			if compareByteArray(l.value, r.value) {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
+
 	case "!=":
 		if !(l.tokenType == r.tokenType ||
 			l.tokenType == tokenTypeChar && r.tokenType == tokenTypeInt ||
 			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeChar) {
 			panic("mismatching == types")
 		}
-		if !compareByteArray(l.value, r.value) {
-			return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
+			i := compareDates(string(l.value), string(r.value))
+			if i != 0 {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
+		} else {
+			if !compareByteArray(l.value, r.value) {
+				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
+			}
+			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 		}
-		return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 	case "&&":
 		if !(l.tokenType == tokenTypeBoolean && r.tokenType == tokenTypeBoolean) {
 			panic("&& expects both sides to be a boolean")
@@ -311,7 +408,9 @@ func parse(f string) []*token {
 				tokenType = tokenTypeBoolean
 				break
 			default:
-				if _, err := strconv.Atoi(k); err == nil {
+				if validateDate(k) {
+					tokenType = tokenTypeDate
+				} else if _, err := strconv.Atoi(k); err == nil {
 					tokenType = tokenTypeInt
 				} else if _, err = strconv.ParseFloat(k, 64); err == nil {
 					tokenType = tokenTypeFloat

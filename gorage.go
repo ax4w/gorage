@@ -12,14 +12,14 @@ type Gorage struct {
 	AllowDuplicated bool
 	Log             bool
 	Path            string
-	Tables          []GorageTable
+	Tables          []Table
 }
 
 /*
 Select a table from the loaded Gorage
 */
 
-func (g *Gorage) FromTable(name string) *GorageTable {
+func (g *Gorage) FromTable(name string) *Table {
 	k := -1
 	for i, v := range g.Tables {
 		if v.Name == name {
@@ -60,17 +60,17 @@ Create a table.
 Two tables with the same name in the same gorage are NOT possible
 */
 
-func (g *Gorage) CreateTable(name string) *GorageTable {
+func (g *Gorage) CreateTable(name string) *Table {
 	if g.TableExists(name) {
 		if g.Log {
 			gprint("CreateTable", "Table already exists")
 		}
 		return nil
 	}
-	t := GorageTable{
+	t := Table{
 		Name:    name,
 		host:    g,
-		Columns: []GorageColumn{},
+		Columns: []Column{},
 		Rows:    [][]interface{}{},
 	}
 	g.Tables = append(g.Tables, t)
@@ -111,13 +111,6 @@ func Open(path string) *Gorage {
 	for i, _ := range g.Tables {
 		g.Tables[i].host = &g
 	}
-	go func() {
-		for _, v := range g.Tables {
-			if c := v.getColByType(TIMEOUT); c != nil {
-
-			}
-		}
-	}()
 	return &g
 }
 
@@ -144,7 +137,7 @@ func Create(path string, allowDuplicates, log bool) *Gorage {
 			Log:             log,
 			AllowDuplicated: allowDuplicates,
 			Path:            path,
-			Tables:          []GorageTable{},
+			Tables:          []Table{},
 		}
 		file, _ := json.MarshalIndent(g, "", "	")
 		err = os.WriteFile(path, file, 0644)

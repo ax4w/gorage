@@ -12,23 +12,23 @@ const (
 	STRING  = 1
 	BOOLEAN = 2
 	FLOAT   = 3
-	TIMEOUT = 4
+	DATE    = 4
 )
 
-type GorageColumn struct {
+type Column struct {
 	Name     string
 	Datatype int
 }
 
-type GorageTable struct {
+type Table struct {
 	sync.Mutex
 	Name    string
-	Columns []GorageColumn
+	Columns []Column
 	Rows    [][]interface{}
 	host    *Gorage
 }
 
-func (g *GorageTable) getColByType(t int) *GorageColumn {
+func (g *Table) getColByType(t int) *Column {
 	if len(g.Columns) == 0 {
 		return nil
 	}
@@ -40,7 +40,7 @@ func (g *GorageTable) getColByType(t int) *GorageColumn {
 	return nil
 }
 
-func (g *GorageTable) getColAndIndexByName(name string) (*GorageColumn, int) {
+func (g *Table) getColAndIndexByName(name string) (*Column, int) {
 	if len(g.Columns) == 0 {
 		return nil, -1
 	}
@@ -61,7 +61,7 @@ func (g *GorageTable) getColAndIndexByName(name string) (*GorageColumn, int) {
 /*
 the name is the column name
 */
-func (g *GorageTable) RemoveColumn(name string) *GorageTable {
+func (g *Table) RemoveColumn(name string) *Table {
 
 	c, idx := g.getColAndIndexByName(name)
 	if c == nil {
@@ -83,9 +83,9 @@ func (g *GorageTable) RemoveColumn(name string) *GorageTable {
 /*
 name is the name of the column. The datatype can be choosen from the provieded and implemented datatypes (f.e. INT,STRING)
 */
-func (g *GorageTable) AddColumn(name string, datatype int) *GorageTable {
+func (g *Table) AddColumn(name string, datatype int) *Table {
 	if v, _ := g.getColAndIndexByName(name); v == nil {
-		g.Columns = append(g.Columns, GorageColumn{
+		g.Columns = append(g.Columns, Column{
 			name,
 			datatype,
 		})
@@ -115,9 +115,9 @@ func (g *GorageTable) AddColumn(name string, datatype int) *GorageTable {
 /*
 f is the evaluate string. See github README.md for examples
 */
-func (g *GorageTable) Where(f string) *GorageTable {
+func (g *Table) Where(f string) *Table {
 	g.Lock()
-	res := &GorageTable{
+	res := &Table{
 		Name:    g.Name,
 		Columns: g.Columns,
 		host:    g.host,
@@ -134,13 +134,19 @@ func (g *GorageTable) Where(f string) *GorageTable {
 					panic("Column not found")
 				}
 				switch col.Datatype {
+				case DATE:
+					if v[colIdx] == nil {
+						k = fmt.Sprintf("f")
+					}
+					k = fmt.Sprintf("%s", v[colIdx])
+					break
 				case STRING:
 					if v[colIdx] == nil {
 						k = fmt.Sprintf("f")
 					}
 					k = fmt.Sprintf("'%s'", v[colIdx])
 					break
-				case FLOAT, INT, TIMEOUT:
+				case FLOAT, INT:
 					if v[colIdx] == nil {
 						k = fmt.Sprintf("f")
 					} else {
@@ -176,7 +182,7 @@ func (g *GorageTable) Where(f string) *GorageTable {
 data is a map, where the key is the column and the interace is the value.
 the datatype of the interface needs to match the datatype, which the column represents
 */
-func (g *GorageTable) Update(data map[string]interface{}) *GorageTable {
+func (g *Table) Update(data map[string]interface{}) *Table {
 	//g.Lock()
 	rt := g.host.FromTable(g.Name) // we need to get the table again to do persistent changes to it in memory
 	rt.Lock()
@@ -210,7 +216,7 @@ func (g *GorageTable) Update(data map[string]interface{}) *GorageTable {
 /*
 Deletes Rows
 */
-func (g *GorageTable) Delete() {
+func (g *Table) Delete() {
 	realTable := g.host.FromTable(g.Name) // we need to get the table again to do persistent changes to it in memory
 
 	if realTable == nil {
@@ -239,12 +245,12 @@ func (g *GorageTable) Delete() {
 /*
 columns is a string array, in which the wanted columns are stored
 */
-func (g *GorageTable) Select(columns []string) *GorageTable {
+func (g *Table) Select(columns []string) *Table {
 	g.Lock()
 	var columnIdx []int
-	tmp := &GorageTable{
+	tmp := &Table{
 		Name:    g.Name,
-		Columns: []GorageColumn{},
+		Columns: []Column{},
 		host:    g.host,
 		Rows:    [][]interface{}{},
 	}
@@ -271,7 +277,7 @@ func (g *GorageTable) Select(columns []string) *GorageTable {
 	return tmp
 }
 
-func (g *GorageTable) isDuplicate(hash uint32) bool {
+func (g *Table) isDuplicate(hash uint32) bool {
 	for _, v := range g.Rows {
 		if hash == computeHash(v) {
 			return true
@@ -286,7 +292,7 @@ If a cell shall be empty you can use nil.
 
 *Remember*: You can not compare in nil value, when using the column in a where condition
 */
-func (g *GorageTable) Insert(data []interface{}) {
+func (g *Table) Insert(data []interface{}) {
 	g.Lock()
 	if len(data) != len(g.Columns) {
 		panic(fmt.Errorf("column count and data count are different"))
