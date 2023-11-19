@@ -170,7 +170,7 @@ func (g *Table) Where(f string) *Table {
 			tmp = append(tmp, k)
 		}
 		q := strings.Join(tmp, " ")
-		if e := eval(q); e == "t" {
+		if eval(q) {
 			res.Rows = append(res.Rows, v)
 		}
 	}

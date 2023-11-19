@@ -27,12 +27,43 @@ var (
 	strongSplit = []string{"&&", "!&", "||", "!|"}
 )
 
+/*
+* 	HELPER FUNCTIONS
+ */
+
 func validateDate(d string) bool {
 	_, err := time.Parse("2006-01-02", d)
 	if err != nil {
 		return false
 	}
 	return true
+}
+
+func splitForStrings(f string) (r []string) {
+	var tmp string
+	inString := false
+	for _, v := range f {
+		if string(v) != "'" {
+			tmp += string(v)
+		} else {
+			if inString {
+				tmp += string(v)
+				inString = false
+				r = append(r, tmp)
+				tmp = ""
+				continue
+			}
+			inString = true
+			r = append(r, tmp)
+			tmp = ""
+			tmp += string(v)
+
+		}
+	}
+	if len(tmp) > 0 {
+		r = append(r, tmp)
+	}
+	return r
 }
 
 func compareByteArray(b1, b2 []byte) bool {
@@ -91,6 +122,20 @@ func compareDates(d1, d2 string) int {
 	return 0
 }
 
+func compareCheck(r, l *token) {
+	if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
+		l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
+		l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
+		l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt ||
+		l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate) {
+		panic("< is only supported for int, float and date")
+	}
+}
+
+/*£
+*	-----------------------------------------
+ */
+
 func evaluate(f *token) *token {
 	if f.left == nil && f.right == nil {
 		return f
@@ -100,13 +145,7 @@ func evaluate(f *token) *token {
 	r := evaluate(f.right)
 	switch string(m.value) {
 	case "<":
-		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt ||
-			l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate) {
-			panic("< is only supported for int, float and date")
-		}
+		compareCheck(r, l)
 		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
 			i := compareDates(string(l.value), string(r.value))
 			if i == -2 {
@@ -121,15 +160,8 @@ func evaluate(f *token) *token {
 			}
 			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 		}
-
 	case ">":
-		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt ||
-			l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate) {
-			panic("<= is only supported for int, float and date")
-		}
+		compareCheck(r, l)
 		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
 			i := compareDates(string(l.value), string(r.value))
 			if i == 2 {
@@ -144,15 +176,8 @@ func evaluate(f *token) *token {
 			}
 			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 		}
-
 	case ">=":
-		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt ||
-			l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate) {
-			panic("<= is only supported for int, float and date")
-		}
+		compareCheck(r, l)
 		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
 			i := compareDates(string(l.value), string(r.value))
 			if i == 1 {
@@ -167,15 +192,8 @@ func evaluate(f *token) *token {
 			}
 			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 		}
-
 	case "<=":
-		if !(r.tokenType == tokenTypeInt && l.tokenType == tokenTypeInt ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeInt && r.tokenType == tokenTypeFloat ||
-			l.tokenType == tokenTypeFloat && r.tokenType == tokenTypeInt ||
-			l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate) {
-			panic("<= is only supported for int, float and date")
-		}
+		compareCheck(r, l)
 		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
 			i := compareDates(string(l.value), string(r.value))
 			if i == -1 {
@@ -208,7 +226,6 @@ func evaluate(f *token) *token {
 			}
 			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
 		}
-
 	case "!=":
 		if !(l.tokenType == r.tokenType ||
 			l.tokenType == tokenTypeChar && r.tokenType == tokenTypeInt ||
@@ -343,33 +360,6 @@ func traverseTree(t *token) {
 	traverseTree(t.right)
 }
 
-func splitForStrings(f string) (r []string) {
-	var tmp string
-	inString := false
-	for _, v := range f {
-		if string(v) != "'" {
-			tmp += string(v)
-		} else {
-			if inString {
-				tmp += string(v)
-				inString = false
-				r = append(r, tmp)
-				tmp = ""
-				continue
-			}
-			inString = true
-			r = append(r, tmp)
-			tmp = ""
-			tmp += string(v)
-
-		}
-	}
-	if len(tmp) > 0 {
-		r = append(r, tmp)
-	}
-	return r
-}
-
 func parse(f string) []*token {
 	var nodes []*token
 	split := splitForStrings(f)
@@ -429,7 +419,7 @@ func parse(f string) []*token {
 	return nodes
 }
 
-func eval(f string) string {
+func eval(f string) bool {
 	p := parse(f)
 	t := toTree(p)
 	if len(t) == 0 {
@@ -439,5 +429,8 @@ func eval(f string) string {
 	if e == nil {
 		panic("Eval returned nil")
 	}
-	return string(e.value)
+	if string(e.value) == "t" {
+		return true
+	}
+	return false
 }
