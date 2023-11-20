@@ -69,9 +69,9 @@ func (g *Gorage) copyTable(name string) Table {
 			t := Table{
 				host: v.host,
 				p:    v.p,
-				t: transaction{
-					q: v.t.q.n,
-				},
+			}
+			if v.t.q != nil && v.t.q.n != nil {
+				t.t.q = v.t.q.n
 			}
 			for _, c := range v.Columns {
 				t.Columns = append(t.Columns, c)
