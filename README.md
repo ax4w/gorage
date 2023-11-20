@@ -14,7 +14,7 @@ A simple to use local storage system, which uses json files to store data and pr
 - [X] Eval Safety
 - [X] Concurrency 
 - [X] Advanced eval:  (, ), NAND, NOR
-- [ ] Transaction can to rollbacks when failed
+- [X ] Transaction can to rollbacks when failed
 
 ## Concurrency / Transactions
 Transactions were added in `ef79d96`. Transactions in gorage work like a queue.
@@ -25,8 +25,11 @@ The transaction manager cant ensure, which thread is executed first.
 
 If you use only the main thread the actions are blocking -> you have to wait for the action to complete
 
-==> You will get the correct and intact data ofter the transaction. Currently the transaction are not able to rollback 
-the state. This is going to change in the near future.
+==> You will get the correct and intact data ofter the transaction. 
+Rollbacks of transactions, when failed, are implemented in:
+- Update
+
+Other operations are designed in such way, that a transaction will be validated before execution
 
 ## Create Storage and Tables
 ### CreateNewGorage
