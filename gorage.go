@@ -48,6 +48,47 @@ func (g *Gorage) FromTable(name string) *Table {
 	}
 }
 
+func (g *Gorage) copyTableToTable(name string, t *Table) {
+	if !g.TableExists(name) {
+		return
+	}
+	for i, v := range g.Tables {
+		if v.Name == name {
+			g.Tables[i].Columns = t.Columns
+			g.Tables[i].Rows = t.Rows
+		}
+	}
+}
+
+func (g *Gorage) copyTable(name string) Table {
+	if !g.TableExists(name) {
+		return Table{}
+	}
+	for _, v := range g.Tables {
+		if v.Name == name {
+			t := Table{
+				host: v.host,
+				p:    v.p,
+				t: transaction{
+					q: v.t.q.n,
+				},
+			}
+			for _, c := range v.Columns {
+				t.Columns = append(t.Columns, c)
+			}
+			for _, r := range v.Rows {
+				var a []interface{}
+				for _, t1 := range r {
+					a = append(a, t1)
+				}
+				t.Rows = append(t.Rows, a)
+			}
+			return t
+		}
+	}
+	return Table{}
+}
+
 func (g *Gorage) RemoveTable(name string) *Gorage {
 	if !g.TableExists(name) {
 		return g

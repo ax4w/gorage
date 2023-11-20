@@ -46,7 +46,7 @@ func transactionManger(t *Table) {
 				break
 			case actionUpdate:
 				p := d.payload[0].(map[string]interface{})
-				d.c <- t.Update(p)
+				d.c <- t.update(p)
 				break
 			case actionAddColumn:
 				name := d.payload[0].(string)

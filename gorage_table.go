@@ -307,9 +307,22 @@ func (g *Table) Update(d map[string]interface{}) *Table {
 	}
 }
 
+func (g *Table) Wait() {
+	for g.t.q.Head() != nil {
+
+	}
+}
+
 func (g *Table) update(data map[string]interface{}) *Table {
 	//g.Lock()
-	rt := g.host.FromTable(g.Name) // we need to get the table again to do persistent changes to it in memory
+
+	rtCopy := g.host.copyTable(g.Name)
+	var rt *Table
+	for i, v := range g.host.Tables {
+		if v.Name == g.Name {
+			rt = &g.host.Tables[i]
+		}
+	}
 	for _, v := range g.Rows {
 		for i, r := range rt.Rows {
 			if computeHash(v) != computeHash(r) {
@@ -321,7 +334,8 @@ func (g *Table) update(data map[string]interface{}) *Table {
 			for key, val := range data {
 				c, index := rt.getColAndIndexByName(key)
 				if c == nil || !validateDatatype(val, *c) {
-					panic("No matching column found or mismatch datatype")
+					g.host.copyTableToTable(g.Name, &rtCopy)
+					return rt
 				}
 				rt.Rows[i][index] = val
 				if g.host.Log {
@@ -485,7 +499,9 @@ func (g *Table) insert(data []interface{}) *Table {
 		return g
 	}
 	for i, v := range g.Columns {
-		validateDatatype(data[i], v)
+		if !validateDatatype(data[i], v) {
+			return g
+		}
 	}
 	g.Rows = append(g.Rows, data)
 	return g
