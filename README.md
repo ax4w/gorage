@@ -14,7 +14,7 @@ A simple to use local storage system, which uses json files to store data and pr
 - [X] Eval Safety
 - [X] Concurrency 
 - [X] Advanced eval:  (, ), NAND, NOR
-- [X] Transaction can to rollbacks when failed
+- [X] Transaction can do rollbacks when failed
 
 ## Concurrency / Transactions
 Transactions were added in `ef79d96`. Transactions in gorage work like a queue.
