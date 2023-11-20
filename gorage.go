@@ -8,7 +8,6 @@ import (
 )
 
 type Gorage struct {
-	sync.Mutex
 	AllowDuplicated bool
 	Log             bool
 	Path            string
@@ -27,7 +26,26 @@ func (g *Gorage) FromTable(name string) *Table {
 			break
 		}
 	}
-	return &g.Tables[k]
+	c := make(chan *Table)
+	if g.Tables[k].t.q == nil {
+		g.Tables[k].t.q = newQueue(&data{
+			action: actionFromTable,
+			c:      c,
+		})
+	} else {
+		g.Tables[k].t.q.append(&data{
+			action: actionFromTable,
+			c:      c,
+		})
+	}
+
+	for {
+		select {
+		case <-c:
+			close(c)
+			return &g.Tables[k]
+		}
+	}
 }
 
 func (g *Gorage) RemoveTable(name string) *Gorage {
@@ -36,6 +54,23 @@ func (g *Gorage) RemoveTable(name string) *Gorage {
 	}
 	for i, v := range g.Tables {
 		if v.Name == name {
+			c := make(chan *Table)
+			if g.Tables[i].t.q == nil {
+				g.Tables[i].t.q = newQueue(&data{
+					action: actionDeleteTable,
+					c:      c,
+				})
+			} else {
+				g.Tables[i].t.q.append(&data{
+					action: actionDeleteTable,
+					c:      c,
+				})
+			}
+			select {
+			case <-c:
+				close(c)
+				break
+			}
 			g.Tables = append(g.Tables[:i], g.Tables[i+1:]...)
 		}
 	}
@@ -67,14 +102,16 @@ func (g *Gorage) CreateTable(name string) *Table {
 		}
 		return nil
 	}
+
 	t := Table{
 		Name:    name,
 		host:    g,
 		Columns: []Column{},
 		Rows:    [][]interface{}{},
+		p:       true,
 	}
 	g.Tables = append(g.Tables, t)
-
+	go transactionManger(&g.Tables[len(g.Tables)-1])
 	return &g.Tables[len(g.Tables)-1]
 }
 
@@ -110,6 +147,8 @@ func Open(path string) *Gorage {
 	}
 	for i, _ := range g.Tables {
 		g.Tables[i].host = &g
+		g.Tables[i].p = true
+		go transactionManger(&g.Tables[i])
 	}
 	return &g
 }
@@ -146,4 +185,19 @@ func Create(path string, allowDuplicates, log bool) *Gorage {
 		}
 	}
 	return Open(path)
+}
+
+func (g *Gorage) Close() {
+	var w sync.WaitGroup
+	for i, _ := range g.Tables {
+		g.Tables[i].sendExit()
+		go func(i int) {
+			defer w.Done()
+			w.Add(1)
+			for g.Tables[i].t.q.Head() != nil {
+			}
+		}(i)
+	}
+	w.Wait()
+	g.Save()
 }

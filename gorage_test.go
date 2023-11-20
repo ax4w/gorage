@@ -2,7 +2,6 @@ package Gorage
 
 import (
 	"os"
-	"strconv"
 	"testing"
 )
 
@@ -44,6 +43,7 @@ func TestInsert(t *testing.T) {
 		FromTable("User").
 		Where(":FirstName == 'James'")
 	if len(res.Rows) != 1 {
+		g.Close()
 		t.Fatalf("Row was not inserted")
 	}
 	g.Save()
@@ -60,6 +60,7 @@ func TestUpdate(t *testing.T) {
 		FromTable("User").
 		Where(":FirstName == 'William'")
 	if len(res.Rows) != 1 {
+		g.Close()
 		t.Fatalf("Row was not inserted")
 	}
 	g.Save()
@@ -72,9 +73,10 @@ func TestWhere(t *testing.T) {
 		Where("( :FirstName == 'William' && :Age == 2 ) || :IQ >= 90.0").
 		Select([]string{"FirstName", "LastName", "Age"})
 	if len(userTable.Rows) != 2 {
+		g.Close()
 		t.Fatalf("More than expected")
 	}
-	for _, v := range userTable.Rows {
+	/*for _, v := range userTable.Rows {
 		for _, j := range v {
 			switch j.(type) {
 			case string:
@@ -91,7 +93,7 @@ func TestWhere(t *testing.T) {
 				}
 			}
 		}
-	}
+	}*/
 	g.Save()
 }
 

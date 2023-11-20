@@ -11,17 +11,11 @@ A simple to use local storage system, which uses json files to store data and pr
 - [X] Select statement
 - [X] Update statement
 - [X] Delete statement
-- [ ] Eval Safety
+- [X] Eval Safety
 - [X] Concurrency 
 - [X] Advanced eval:  (, ), NAND, NOR
 
-## Concurrency
-GorageTable operations that are designed to be used concurrent:
-- Insert
-- Update 
-- Delete
-
-Every other operation can be used concurrent, but it is not guaranteed, that it will work.
+## Concurrency / Transactions
 
 
 ## Create Storage and Tables
@@ -52,7 +46,15 @@ if table != nil {
 		AddColumn("Age", INT).
 		AddColumn("IQ", INT)
 }
+g.Close()
 ```
+
+### Save
+Saves the gorage
+
+### Close
+Close needs to be called, when the program exists or when the gorage wants to be terminated
+to end all threads and channels
 
 ## Data Operations
 ### FromTable
@@ -114,6 +116,7 @@ William | 22 | USA
 ```go
 g := OpenGorage("./test.json")
 userTable := g.FromTable("User").Where(":Name == 'William' && :Country == 'USA' ").Select([]string{"Name", "Age"})
+g.Close()
 ```
 
 ### Update
@@ -122,7 +125,7 @@ g := OpenGorage("./test.json")
 g.FromTable("User").Where(":Name == 'William' && :Age == 20").Update(map[string]interface{}{
 	"Name": "Tom"
 })
-g.Save()
+g.Close()
 
 ```
 
@@ -130,7 +133,7 @@ g.Save()
 ```go
 g := OpenGorage("./test.json")
 g.FromTable("User").Where(":Name == 'William' && :Age == 20").Delete()
-g.Save()
+g.Close()
 ```
 
 #### Insert
@@ -177,7 +180,7 @@ g.Save()
 
 	gorage.Save()
 	userTable.Where(":Handle == '@Emily_Backup' || :Name == 'Carl'").Delete()
-	gorage.Save()
+	gorage.Close()
 
 
 ```

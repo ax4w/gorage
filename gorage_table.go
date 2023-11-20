@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
-	"sync"
 )
 
 const (
@@ -20,12 +19,26 @@ type Column struct {
 	Datatype int
 }
 
+type transaction struct {
+	q *queue
+}
+
 type Table struct {
-	sync.Mutex
 	Name    string
 	Columns []Column
 	Rows    [][]interface{}
 	host    *Gorage
+	t       transaction
+	p       bool
+}
+
+func (g *Table) isDuplicate(hash uint32) bool {
+	for _, v := range g.Rows {
+		if hash == computeHash(v) {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *Table) getColByType(t int) *Column {
@@ -38,6 +51,18 @@ func (g *Table) getColByType(t int) *Column {
 		}
 	}
 	return nil
+}
+
+func (g *Table) sendExit() {
+	if g.t.q == nil {
+		g.t.q = newQueue(&data{
+			action: actionExit,
+		})
+	} else {
+		g.t.q.append(&data{
+			action: actionExit,
+		})
+	}
 }
 
 func (g *Table) getColAndIndexByName(name string) (*Column, int) {
@@ -62,21 +87,43 @@ func (g *Table) getColAndIndexByName(name string) (*Column, int) {
 the name is the column name
 */
 func (g *Table) RemoveColumn(name string) *Table {
+	if !g.p {
+		return g.removeColumn(name)
+	}
+	c := make(chan *Table)
+	if g.t.q == nil {
+		g.t.q = newQueue(&data{
+			action:  actionDeleteColumn,
+			payload: []interface{}{name},
+			c:       c,
+		})
+	} else {
+		g.t.q.append(&data{
+			action:  actionDeleteColumn,
+			payload: []interface{}{name},
+			c:       c,
+		})
+	}
+	for {
+		select {
+		case e := <-c:
+			close(c)
+			return e
+		}
+	}
 
+}
+
+func (g *Table) removeColumn(name string) *Table {
 	c, idx := g.getColAndIndexByName(name)
 	if c == nil {
 		return g
 	}
-	g.Lock()
 	g.Columns = append(g.Columns[:idx], g.Columns[idx+1:]...)
-
 	//remove cells
 	for i := 0; i < len(g.Rows); i++ {
-		//cpy := g.Rows[i]
-		//g.Rows[i] = []interface{}{}
 		g.Rows[i] = append(g.Rows[i][:idx], g.Rows[i][idx+1:]...)
 	}
-	g.Unlock()
 	return g
 }
 
@@ -84,6 +131,33 @@ func (g *Table) RemoveColumn(name string) *Table {
 name is the name of the column. The datatype can be choosen from the provieded and implemented datatypes (f.e. INT,STRING)
 */
 func (g *Table) AddColumn(name string, datatype int) *Table {
+	if !g.p {
+		return g.addColumn(name, datatype)
+	}
+	c := make(chan *Table)
+	if g.t.q == nil {
+		g.t.q = newQueue(&data{
+			action:  actionAddColumn,
+			payload: []interface{}{name, datatype},
+			c:       c,
+		})
+	} else {
+		g.t.q.append(&data{
+			action:  actionAddColumn,
+			payload: []interface{}{name, datatype},
+			c:       c,
+		})
+	}
+	for {
+		select {
+		case e := <-c:
+			close(c)
+			return e
+		}
+	}
+}
+
+func (g *Table) addColumn(name string, datatype int) *Table {
 	if v, _ := g.getColAndIndexByName(name); v == nil {
 		g.Columns = append(g.Columns, Column{
 			name,
@@ -116,7 +190,32 @@ func (g *Table) AddColumn(name string, datatype int) *Table {
 f is the evaluate string. See github README.md for examples
 */
 func (g *Table) Where(f string) *Table {
-	g.Lock()
+	if !g.p {
+		return g.where(f)
+	}
+	c := make(chan *Table)
+	if g.t.q == nil {
+		g.t.q = newQueue(&data{
+			action:  actionWhere,
+			payload: []interface{}{f},
+			c:       c,
+		})
+	} else {
+		g.t.q.append(&data{
+			action:  actionWhere,
+			payload: []interface{}{f},
+			c:       c,
+		})
+	}
+	for {
+		select {
+		case e := <-c:
+			close(c)
+			return e
+		}
+	}
+}
+func (g *Table) where(f string) *Table {
 	res := &Table{
 		Name:    g.Name,
 		Columns: g.Columns,
@@ -174,7 +273,6 @@ func (g *Table) Where(f string) *Table {
 			res.Rows = append(res.Rows, v)
 		}
 	}
-	g.Unlock()
 	return res
 }
 
@@ -182,10 +280,36 @@ func (g *Table) Where(f string) *Table {
 data is a map, where the key is the column and the interace is the value.
 the datatype of the interface needs to match the datatype, which the column represents
 */
-func (g *Table) Update(data map[string]interface{}) *Table {
+
+func (g *Table) Update(d map[string]interface{}) *Table {
+	if !g.p {
+		return g.update(d)
+	}
+	c := make(chan *Table)
+	if g.t.q == nil {
+		g.t.q = newQueue(&data{
+			action:  actionUpdate,
+			payload: []interface{}{d},
+			c:       c,
+		})
+	} else {
+		g.t.q.append(&data{
+			action:  actionUpdate,
+			payload: []interface{}{d},
+			c:       c,
+		})
+	}
+	for {
+		select {
+		case e := <-c:
+			return e
+		}
+	}
+}
+
+func (g *Table) update(data map[string]interface{}) *Table {
 	//g.Lock()
 	rt := g.host.FromTable(g.Name) // we need to get the table again to do persistent changes to it in memory
-	rt.Lock()
 	for _, v := range g.Rows {
 		for i, r := range rt.Rows {
 			if computeHash(v) != computeHash(r) {
@@ -197,8 +321,6 @@ func (g *Table) Update(data map[string]interface{}) *Table {
 			for key, val := range data {
 				c, index := rt.getColAndIndexByName(key)
 				if c == nil || !validateDatatype(val, *c) {
-					g.Unlock()
-					rt.Unlock()
 					panic("No matching column found or mismatch datatype")
 				}
 				rt.Rows[i][index] = val
@@ -208,7 +330,6 @@ func (g *Table) Update(data map[string]interface{}) *Table {
 			}
 		}
 	}
-	rt.Unlock()
 	return rt
 
 }
@@ -217,19 +338,37 @@ func (g *Table) Update(data map[string]interface{}) *Table {
 Deletes Rows
 */
 func (g *Table) Delete() {
+	if !g.p {
+		g.delete()
+		return
+	}
+	c := make(chan *Table)
+	if g.t.q == nil {
+		g.t.q = newQueue(&data{
+			action:  actionDelete,
+			payload: []interface{}{g},
+			c:       c,
+		})
+	} else {
+		g.t.q.append(&data{
+			action:  actionDelete,
+			payload: []interface{}{g},
+			c:       c,
+		})
+	}
+}
+
+func (g *Table) delete() *Table {
 	realTable := g.host.FromTable(g.Name) // we need to get the table again to do persistent changes to it in memory
 
 	if realTable == nil {
 		panic("Table not found")
 	}
-	realTable.Lock()
 	for idx, o := range realTable.Rows {
 		for _, i := range g.Rows {
 			if compareRows(o, i) {
 				if idx > len(realTable.Rows) {
-
-					realTable.Unlock()
-					return
+					return g
 				}
 				if idx == len(realTable.Rows) {
 					realTable.Rows = append(realTable.Rows[:idx-1])
@@ -239,14 +378,40 @@ func (g *Table) Delete() {
 			}
 		}
 	}
-	realTable.Unlock()
+	return g
 }
 
 /*
 columns is a string array, in which the wanted columns are stored
 */
+
 func (g *Table) Select(columns []string) *Table {
-	g.Lock()
+	if !g.p {
+		return g._select(columns)
+	}
+	c := make(chan *Table)
+	if g.t.q == nil {
+		g.t.q = newQueue(&data{
+			action:  actionSelect,
+			payload: []interface{}{columns},
+			c:       c,
+		})
+	} else {
+		g.t.q.append(&data{
+			action:  actionSelect,
+			payload: []interface{}{columns},
+			c:       c,
+		})
+	}
+	for {
+		select {
+		case e := <-c:
+			close(c)
+			return e
+		}
+	}
+}
+func (g *Table) _select(columns []string) *Table {
 	var columnIdx []int
 	tmp := &Table{
 		Name:    g.Name,
@@ -273,17 +438,8 @@ func (g *Table) Select(columns []string) *Table {
 
 		tmp.Rows = append(tmp.Rows, t)
 	}
-	g.Unlock()
-	return tmp
-}
 
-func (g *Table) isDuplicate(hash uint32) bool {
-	for _, v := range g.Rows {
-		if hash == computeHash(v) {
-			return true
-		}
-	}
-	return false
+	return tmp
 }
 
 /*
@@ -292,8 +448,33 @@ If a cell shall be empty you can use nil.
 
 *Remember*: You can not compare in nil value, when using the column in a where condition
 */
-func (g *Table) Insert(data []interface{}) {
-	g.Lock()
+func (g *Table) Insert(d []interface{}) {
+	if !g.p {
+		g.insert(d)
+		return
+	}
+	c := make(chan *Table)
+	if g.t.q == nil {
+		g.t.q = newQueue(&data{
+			action:  actionInsert,
+			payload: d,
+			c:       c,
+		})
+	} else {
+		g.t.q.append(&data{
+			action:  actionInsert,
+			payload: d,
+			c:       c,
+		})
+	}
+	for {
+		select {
+		case <-c:
+			return
+		}
+	}
+}
+func (g *Table) insert(data []interface{}) *Table {
 	if len(data) != len(g.Columns) {
 		panic(fmt.Errorf("column count and data count are different"))
 	}
@@ -301,11 +482,11 @@ func (g *Table) Insert(data []interface{}) {
 		if g.host.Log {
 			gprint("Insert", "Data already exists in Table. Returning")
 		}
-		return
+		return g
 	}
 	for i, v := range g.Columns {
 		validateDatatype(data[i], v)
 	}
 	g.Rows = append(g.Rows, data)
-	g.Unlock()
+	return g
 }
