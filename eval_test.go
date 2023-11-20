@@ -29,7 +29,7 @@ func TestEval(t *testing.T) {
 	if !eval("2023-11-19 == 2023-11-19") {
 		t.Fatalf("Should be true")
 	}
-	if !eval("2023-11-19 == 2023-11-19") {
+	if !eval("2022-11-19 <= 2023-11-19") {
 		t.Fatalf("Should be true")
 	}
 }

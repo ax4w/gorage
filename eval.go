@@ -91,11 +91,9 @@ func convertBytesToFloat(v []byte) float64 {
 	return r
 }
 
-// -2 d1 is greater
-// -1 d1 is greater than
+// -1 d1 is greater
 // 0 equal
-// 1 d2 is greater than
-// 2 d2 is greater
+// 1 d2 is greater
 func compareDates(d1, d2 string) int {
 	t1, err := time.Parse("2006-01-02", d1)
 	if err != nil {
@@ -109,15 +107,11 @@ func compareDates(d1, d2 string) int {
 	td2 := t2.Unix()
 	switch {
 	case td1 > td2:
-		return -2
+		return -1
 	case td1 == td2:
 		return 0
-	case td1 >= td2:
-		return -1
-	case td2 >= td1:
-		return 1
 	case td2 > td1:
-		return 2
+		return 1
 	}
 	return 0
 }
@@ -148,7 +142,7 @@ func evaluate(f *token) *token {
 		compareCheck(r, l)
 		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
 			i := compareDates(string(l.value), string(r.value))
-			if i == -2 {
+			if i == 1 {
 				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 			}
 			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
@@ -164,7 +158,7 @@ func evaluate(f *token) *token {
 		compareCheck(r, l)
 		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
 			i := compareDates(string(l.value), string(r.value))
-			if i == 2 {
+			if i == -1 {
 				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 			}
 			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
@@ -180,7 +174,7 @@ func evaluate(f *token) *token {
 		compareCheck(r, l)
 		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
 			i := compareDates(string(l.value), string(r.value))
-			if i == 1 {
+			if i == -1 || i == 0 {
 				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 			}
 			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
@@ -196,7 +190,7 @@ func evaluate(f *token) *token {
 		compareCheck(r, l)
 		if l.tokenType == tokenTypeDate && r.tokenType == tokenTypeDate {
 			i := compareDates(string(l.value), string(r.value))
-			if i == -1 {
+			if i == 1 || i == 0 {
 				return &token{value: []byte("t"), tokenType: tokenTypeBoolean}
 			}
 			return &token{value: []byte("f"), tokenType: tokenTypeBoolean}
