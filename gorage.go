@@ -12,6 +12,7 @@ type Gorage struct {
 	Log             bool
 	Path            string
 	Tables          []Table
+	memOnly         bool
 }
 
 /*
@@ -160,6 +161,9 @@ func (g *Gorage) CreateTable(name string) *Table {
 Save the loaded gorage
 */
 func (g *Gorage) Save() {
+	if g.memOnly {
+		return
+	}
 	err := os.Truncate(g.Path, 0)
 	if err != nil {
 		panic(err.Error())
@@ -192,6 +196,14 @@ func Open(path string) *Gorage {
 		go transactionManger(&g.Tables[i])
 	}
 	return &g
+}
+
+func CreateMemOnly(allowDuplicates, log bool) *Gorage {
+	return &Gorage{
+		AllowDuplicated: allowDuplicates,
+		Log:             log,
+		memOnly:         true,
+	}
 }
 
 /*

@@ -164,3 +164,15 @@ func TestComplete(t *testing.T) {
 	userTable.Where(":Handle == '@Emily_Backup' || :Name == 'Carl'").Delete()
 	gorage.Save()
 }
+
+func TestCreateMemOnly(t *testing.T) {
+	g := CreateMemOnly(true, false)
+	tab := g.CreateTable("Test")
+	tab.AddColumn("Name", STRING)
+	tab.Insert([]interface{}{"Tom"})
+	tab.Insert([]interface{}{"Tom"})
+	for _, v := range tab.Rows {
+		println(v[0].(string))
+	}
+	g.Close()
+}
