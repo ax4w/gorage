@@ -32,14 +32,21 @@ Rollbacks of transactions, when failed, are implemented in:
 Other operations are designed in such way, that a transaction will be validated before execution
 
 ## Create Storage and Tables
-### CreateNewGorage
-> `CreateNewGorage("./test", false, true)`
+
+### Create
+> `Create("./test", false, true)`
 1. Paramter is the path and the file, which you want to create
 2. Paramter is a boolean, if duplicate rows shall be allowed
 3. Paramter is a boolean, if you want to see the log
 
-### OpenGorage
-> `g := OpenGorage("./test")`
+### CreateMemOnly
+> `Create(false, true)`
+
+Same functionality as create.
+The Gorage instance is **not** saved to a file.
+
+### Open
+> `g := Open("./test")`
 
 Open Gorage by path
 ### CreateTable
