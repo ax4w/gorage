@@ -171,5 +171,10 @@ func TestCreateMemOnly(t *testing.T) {
 	tab.AddColumn("Name", STRING)
 	tab.Insert([]interface{}{"Tom"})
 	tab.Insert([]interface{}{"Tom"})
+	tab.Where(":Name == 'Tom'")
+	tab.Update(map[string]interface{}{
+		"Name": "John",
+	})
+	tab.Delete()
 	g.Close()
 }
