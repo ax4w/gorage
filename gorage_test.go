@@ -171,8 +171,5 @@ func TestCreateMemOnly(t *testing.T) {
 	tab.AddColumn("Name", STRING)
 	tab.Insert([]interface{}{"Tom"})
 	tab.Insert([]interface{}{"Tom"})
-	for _, v := range tab.Rows {
-		println(v[0].(string))
-	}
 	g.Close()
 }
