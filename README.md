@@ -50,7 +50,7 @@ The Gorage instance is **not** saved to a file.
 
 Open Gorage by path
 ### CreateTable
-> `g := OpenGorage("./test.json")`
+> `g := Open("./test.json")`
 > 
 > `table := g.CreateTable("Example")`
 1. Open Gorage
@@ -58,7 +58,7 @@ Open Gorage by path
 ### AddColumn
 
 ```go
-g := OpenGorage("./test.json")
+g := Open("./test.json")
 table := g.CreateTable("User")
 if table != nil {
 	table.AddColumn("FirstName", STRING).
@@ -134,14 +134,14 @@ William | 22 | USA
 
 #### Select
 ```go
-g := OpenGorage("./test.json")
+g := Open("./test.json")
 userTable := g.FromTable("User").Where(":Name == 'William' && :Country == 'USA' ").Select([]string{"Name", "Age"})
 g.Close()
 ```
 
 ### Update
 ```go
-g := OpenGorage("./test.json")
+g := Open("./test.json")
 g.FromTable("User").Where(":Name == 'William' && :Age == 20").Update(map[string]interface{}{
 	"Name": "Tom"
 })
@@ -151,14 +151,14 @@ g.Close()
 
 #### Delete
 ```go
-g := OpenGorage("./test.json")
+g := Open("./test.json")
 g.FromTable("User").Where(":Name == 'William' && :Age == 20").Delete()
 g.Close()
 ```
 
 #### Insert
 ```go
-g := OpenGorage("./test.json")
+g := Open("./test.json")
 userTable := g.FromTable("User")
 userTable.Insert([]interface{}{"Thomas", 33, nil})
 userTable.Insert([]interface{}{"Carlos", 55, "USA"})
@@ -175,7 +175,7 @@ g.Save()
 			return
 		}
 	}
-	gorage := CreateNewGorage("./Social", false, false)
+	gorage := Create("./Social", false, false)
 	userTable := gorage.CreateTable("User")
 	if userTable == nil {
 		return
