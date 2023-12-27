@@ -73,10 +73,6 @@ func validateDatatype(is interface{}, c Column) bool {
 		if c.Datatype != FLOAT {
 			return false
 		}
-	default:
-		if is != nil {
-			return false
-		}
 	}
 	return true
 

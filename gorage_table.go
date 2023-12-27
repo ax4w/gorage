@@ -2,6 +2,7 @@ package Gorage
 
 import (
 	"fmt"
+	"github.com/0x3alex/gorage/eval"
 	"strconv"
 	"strings"
 )
@@ -269,7 +270,7 @@ func (g *Table) where(f string) *Table {
 			tmp = append(tmp, k)
 		}
 		q := strings.Join(tmp, " ")
-		if eval(q) {
+		if eval.Eval(q) {
 			res.Rows = append(res.Rows, v)
 		}
 	}
@@ -393,6 +394,27 @@ func (g *Table) delete() *Table {
 		}
 	}
 	return g
+}
+
+func (g *Table) Sum(column string) float64 {
+	c, idx := g.getColAndIndexByName(column)
+	if c == nil || (c.Datatype != INT && c.Datatype != FLOAT) {
+		return 0
+	}
+	sum := 0.0
+	for _, row := range g.Rows {
+		v := row[idx]
+		if i, ok := v.(int); ok {
+			sum += float64(i)
+		} else if f, ok := v.(float64); ok {
+			sum += f
+		}
+	}
+	return sum
+}
+
+func (g *Table) Avg(column string) float64 {
+	return g.Sum(column) / float64(len(g.Rows))
 }
 
 /*

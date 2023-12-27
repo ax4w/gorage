@@ -169,8 +169,9 @@ func TestCreateMemOnly(t *testing.T) {
 	g := CreateMemOnly(true, false)
 	tab := g.CreateTable("Test")
 	tab.AddColumn("Name", STRING)
-	tab.Insert([]interface{}{"Tom"})
-	tab.Insert([]interface{}{"Tom"})
+	tab.AddColumn("Age", INT)
+	tab.Insert([]interface{}{"Tom", 1})
+	tab.Insert([]interface{}{"Tom", 3})
 	tab.Where(":Name == 'Tom'")
 	tab.Update(map[string]interface{}{
 		"Name": "John",
